@@ -1,0 +1,6 @@
+[project]
+name = "reu-demo"
+entry = "main.py"
+
+[target]
+machine = "c64-reu"

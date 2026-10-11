@@ -1,0 +1,3 @@
+from pyc64.types import u8
+
+def mode(value: u8) -> None: ...

@@ -1,0 +1,9 @@
+[project]
+name = "tilemap"
+entry = "main.py"
+
+[target]
+machine = "c64"
+
+[assets]
+directory = "assets"

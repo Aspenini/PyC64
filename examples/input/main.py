@@ -1,0 +1,6 @@
+name = input("What is your name? ")
+answer = input("Do you like the C64? ")
+print("Hello", name)
+print("Answer:", answer)
+length = len(name)
+answer_length = len(answer)

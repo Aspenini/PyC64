@@ -1,0 +1,9 @@
+[project]
+name = "assets"
+entry = "main.py"
+
+[target]
+machine = "c64"
+
+[assets]
+directory = "assets"

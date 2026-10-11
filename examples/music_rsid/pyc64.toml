@@ -1,0 +1,9 @@
+[project]
+name = "music-rsid"
+entry = "main.py"
+
+[target]
+machine = "c64"
+
+[assets]
+directory = "assets"

@@ -1,0 +1,7 @@
+build/
+.xmake/
+__pycache__/
+*.PRG
+*.prg
+*.map
+*.lst

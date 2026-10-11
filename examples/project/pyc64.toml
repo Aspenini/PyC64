@@ -1,0 +1,10 @@
+[project]
+name = "lists-demo"
+entry = "../lists/main.py"
+
+[target]
+machine = "c64"
+
+[build]
+directory = "build/c64"
+optimize = "size"
