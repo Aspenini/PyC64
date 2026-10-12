@@ -2,7 +2,7 @@
 
 **A subset of Python, plus a convenient library for the Commodore 64.**
 
-**0.1.0** · Windows x64 / Linux x86_64 · Native 6502/6510 output
+Windows x64 / Linux x86_64 · Native 6502/6510 output
 
 Write ordinary Python syntax and compile it straight to a C64 `.PRG`. Generated
 programs need no interpreter or VM. Fixed-width types and hardware access come
@@ -10,7 +10,7 @@ from libraries, rather than custom language syntax.
 
 ## Get started
 
-Run `PyC64-0.1.0-windows-x64-setup.exe`. The installer includes the compiler, runner,
+Run the Windows installer (`PyC64-VERSION-windows-x64-setup.exe`). It includes the compiler, runner,
 tester, libraries and examples. It installs to `C:\PyC64` and requires administrator
 permission. It does not change PATH. Run the compiler using
 `C:\PyC64\bin\pyc64c.exe`. You do **not** need Python or a compiler toolchain.
@@ -106,7 +106,7 @@ Copy installed examples into a writable folder before building them.
 
 ## What you can write
 
-| Area | Supported in 0.1.0 |
+| Area | Supported |
 | --- | --- |
 | Numbers | `u8`, `i8`, `u16`, `i16`, `bool`, C64 `float`, arithmetic, powers, bitwise operations and common `math` functions |
 | Control flow | Functions with inferred or annotated types, conditionals, loops, `range`, `break`, `continue`, loop `else` and assertions |
@@ -166,12 +166,12 @@ bytes. Try the original [standalone tunes](examples/music_standalone/assets).
 
 Multicolor bitmaps, larger RSID loaders, MUS/multi-SID playback, higher-level disk
 file objects, assembly linking and broader Python support are deferred. The
-Linux builds are verified on Ubuntu 26.04 under WSL 2 with GCC and Clang.
+Linux builds are verified on Ubuntu under WSL 2 with GCC and Clang.
 macOS and real-hardware coverage are not yet release-validated.
 
 ## Build and test
 
-Use [xmake](https://xmake.io/) 2.8.5+ and Visual Studio's C++ build tools/Windows SDK.
+Use [xmake](https://xmake.io/) and Visual Studio's C++ build tools/Windows SDK.
 Windows defaults to MSVC; `--toolchain=clang-cl` selects Clang's compatible driver.
 Both use a static runtime. xmake fetches SDL2 for `pyc64run` and links it statically
 on Windows; `pyc64test` has no SDL dependency. The native compiler needs no LLVM-MOS, cc65 or assembler.
@@ -184,10 +184,10 @@ cd PyC64
 xmake f -m release
 xmake
 xmake install -o build/cli-install
-& 'C:\Program Files\Inno Setup 7\ISCC.exe' packaging\PyC64.iss
+& 'C:\Program Files\Inno Setup\ISCC.exe' packaging\PyC64.iss
 ```
 
-`pyc64c`, `pyc64run` and `pyc64test` are in `build/windows/x64/release/`; Inno Setup 7 writes to
+`pyc64c`, `pyc64run` and `pyc64test` are in `build/windows/x64/release/`; Inno Setup writes to
 `build/installer/`. Use `xmake f -m debug` for debugging. Explicit GCC/Clang
 toolchains are supported; their runtime dependencies may differ.
 
@@ -207,7 +207,7 @@ to select Clang. Keep the installed `bin/` and `share/` directories together.
 `xmake test` compiles and runs the suite in [tests](tests): about 300 small Python
 programs, compile-error cases, command-line checks and example builds, each reported
 as its own test. Programs run on `pyc64test`; machine tests run the same PRG on both
-`pyc64test --machine` and `pyc64run --headless`. CPython 3.11+ confirms that programs
+`pyc64test --machine` and `pyc64run --headless`. CPython confirms that programs
 marked as Python-compatible print the same output; there are no pip dependencies.
 
 ```powershell
