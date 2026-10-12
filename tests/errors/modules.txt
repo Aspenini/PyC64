@@ -1,0 +1,82 @@
+# error: cannot infer parameter
+def generic(values):
+    return len(values)
+
+# ---
+# error: cannot find module 'nonexistent'
+import nonexistent
+
+# ---
+# error: has no export 'missing'
+# at: main.py:1
+from empty import missing
+# file: empty.py
+
+# ---
+# error: circular import
+# at: b.py:1
+import a
+# file: a.py
+import b
+# file: b.py
+import a
+
+# ---
+# error: does not fit in u8
+# at: broken.py:5
+import broken
+# file: broken.py
+from pyc64.types import u8
+def valid() -> u8:
+    return 1
+
+x: u8 = 300
+
+# ---
+# error: conflicts with import alias
+from valid import value
+value = 2
+# file: valid.py
+value = 1
+
+# ---
+# error: must be at module scope
+if True:
+    import valid
+# file: valid.py
+value = 1
+
+# ---
+# error: module namespace requires a member
+from bridge import device
+print(device)
+# file: bridge.py
+from ports import port as device
+# file: ports.py
+import numbers as port
+# file: numbers.py
+value = 7
+
+# ---
+# error: has no export
+from bridge import missing
+# file: bridge.py
+value = 1
+
+# ---
+# error: cannot assign to constant
+import settings
+settings.SIZE = 9
+# file: settings.py
+from typing import Final
+from pyc64.types import u8
+SIZE: Final[u8] = 4
+
+# ---
+# error: cannot assign to constant
+import settings
+settings.SIZE += 1
+# file: settings.py
+from typing import Final
+from pyc64.types import u8
+SIZE: Final[u8] = 4

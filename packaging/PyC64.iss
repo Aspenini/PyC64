@@ -8,6 +8,12 @@
 #ifndef CompilerExe
   #define CompilerExe "build\windows\x64\release\pyc64c.exe"
 #endif
+#ifndef RunnerExe
+  #define RunnerExe "build\windows\x64\release\pyc64run.exe"
+#endif
+#ifndef TesterExe
+  #define TesterExe "build\windows\x64\release\pyc64test.exe"
+#endif
 #ifdef InstallerSmokeTest
   #define InstallerName "PyC64-installer-smoke-test"
 #else
@@ -55,10 +61,15 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "{#CompilerExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#RunnerExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#TesterExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "stdlib\*.py"; DestDir: "{app}\share\pyc64\stdlib"; Flags: ignoreversion recursesubdirs
 Source: "stdlib\*.pyi"; DestDir: "{app}\share\pyc64\stdlib"; Flags: ignoreversion recursesubdirs
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "platform\vendor\STB_LICENSE.txt"; DestDir: "{app}\share\pyc64\licenses"; Flags: ignoreversion
+Source: "third_party\chips\LICENSE"; DestDir: "{app}\share\pyc64\licenses"; DestName: "CHIPS_LICENSE.txt"; Flags: ignoreversion
+Source: "third_party\chrono\LICENSE"; DestDir: "{app}\share\pyc64\licenses"; DestName: "CHRONO_LICENSE.txt"; Flags: ignoreversion
+Source: "runner\SDL_LICENSE.txt"; DestDir: "{app}\share\pyc64\licenses"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "examples\*"; DestDir: "{app}\examples"; Excludes: "build\*,*\build\*,__pycache__\*,*\__pycache__\*,*.exe,*.PRG,*.map,*.lst,*.pyc"; Flags: ignoreversion recursesubdirs
 

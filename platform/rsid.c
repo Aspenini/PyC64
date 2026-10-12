@@ -152,9 +152,10 @@ static void resident(SidCode *c, const SidInfo *sid, int source, int song,
     emit(c, 0x4c, loop, 3);
   }
 }
-int desktop_sid_command(int argc, char **argv) {
-  const char *source = NULL, *output = NULL, *mapping = NULL, *vice = NULL;
-  char path[MAX_PATH], absolute[MAX_PATH], error[256];
+int desktop_sid_command(const char *executable, int argc, char **argv) {
+  const char *source = NULL, *output = NULL, *mapping = NULL, *runner = NULL;
+  const char *rom_dir = NULL;
+  char path[MAX_PATH], absolute[MAX_PATH], error[256], runner_path[MAX_PATH];
   unsigned char *data = NULL, *image = NULL;
   SidInfo sid;
   SidCode boot = {{0}, 0, 0x080d, 0}, driver = {{0}, 0, 0, 0};
@@ -168,7 +169,7 @@ int desktop_sid_command(int argc, char **argv) {
       continue;
     }
     if (!strcmp(s, "-o") || !strcmp(s, "--map") || !strcmp(s, "--song") ||
-        !strcmp(s, "--vice")) {
+        !strcmp(s, "--runner") || !strcmp(s, "--rom-dir")) {
       if (++i == argc || !*argv[i]) {
         fprintf(stderr, "error: %s requires a value\n", s);
         goto done;
@@ -177,8 +178,10 @@ int desktop_sid_command(int argc, char **argv) {
         output = argv[i];
       else if (!strcmp(s, "--map"))
         mapping = argv[i];
-      else if (!strcmp(s, "--vice"))
-        vice = argv[i];
+      else if (!strcmp(s, "--runner"))
+        runner = argv[i];
+      else if (!strcmp(s, "--rom-dir"))
+        rom_dir = argv[i];
       else {
         const char *p = argv[i];
         selected = 0;
@@ -197,9 +200,9 @@ int desktop_sid_command(int argc, char **argv) {
     } else
       source = s;
   }
-  if (!source || (vice && !run)) {
+  if (!source || ((runner || rom_dir) && !run)) {
     fputs("error: use pyc64c sid FILE.sid [-o FILE.PRG] [--song N] [--map "
-          "FILE] [--run --vice PATH]\n",
+          "FILE] [--run [--runner FILE] [--rom-dir DIR]]\n",
           stderr);
     goto done;
   }
@@ -348,12 +351,14 @@ int desktop_sid_command(int argc, char **argv) {
       rc = 1;
       goto done;
     }
-    if (!vice) {
-      vice = getenv("PYC64_VICE");
-      if (!vice || !*vice)
-        vice = "x64sc";
+    if (!runner) {
+      runner = getenv("PYC64_RUNNER");
+      if (!runner || !*runner) {
+        desktop_default_runner(executable, runner_path);
+        runner = runner_path;
+      }
     }
-    rc = desktop_launch(vice, absolute, 0);
+    rc = desktop_run(runner, absolute, rom_dir, 0, NULL);
   }
 done:
   if (file)

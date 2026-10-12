@@ -1,0 +1,223 @@
+# error: requires a member of IntEnum 'A'
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value: A = 1
+
+# ---
+# error: requires a member of IntEnum 'A'
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value: A = B.ONE
+
+# ---
+# error: not a member
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A(2)
+
+# ---
+# error: requires an integer
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A(1.5)
+
+# ---
+# error: expects one integer
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A()
+
+# ---
+# error: requires a string
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A[1]
+
+# ---
+# error: unknown IntEnum
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A["MISSING"]
+
+# ---
+# error: read-only
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+A.ONE = 1
+
+# ---
+# error: invalid assignment target
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A.ONE
+value.name = "new"
+
+# ---
+# error: requires a member of IntEnum 'A'
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A.ONE
+value += 1
+
+# ---
+# error: same IntEnum
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+values = [A.ONE, B.ONE]
+
+# ---
+# error: loop variable
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+value = A.ONE
+for value in range(2):
+    pass
+
+# ---
+# error: conflicts with class
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+A = 1
+
+# ---
+# error: requires a member
+from enum import IntEnum
+class A(IntEnum):
+    ZERO = 0
+    ONE = 1
+class B(IntEnum):
+    ZERO = 0
+    ONE = 1
+def take(value: A):
+    return value
+result = take(B.ONE)
+
+# ---
+# error: only enum.IntEnum
+from enum import Enum
+
+# ---
+# error: at least one
+from enum import IntEnum
+class Empty(IntEnum):
+    pass
+
+# ---
+# error: duplicate
+from enum import IntEnum
+class A(IntEnum):
+    X = 1
+    X = 2
+
+# ---
+# error: compile-time integer
+from enum import IntEnum
+class A(IntEnum):
+    X = "one"
+
+# ---
+# error: signedness
+from enum import IntEnum
+class A(IntEnum):
+    X = -1
+    Y = 65535
+
+# ---
+# error: earlier member
+from enum import IntEnum
+class A(IntEnum):
+    X = Y
+    Y = 1
+
+# ---
+# error: 16-bit
+from enum import IntEnum, auto
+class A(IntEnum):
+    X = 65535
+    Y = auto()
+
+# ---
+# error: before its class
+from enum import IntEnum
+x = A.X
+class A(IntEnum):
+    X = 1
+
+# ---
+# error: zero member
+from pyc64.types import array
+from enum import IntEnum
+class A(IntEnum):
+    X = 1
+values = array(A, 2)
+
+# ---
+# error: complete member initializer
+from enum import IntEnum, auto
+class A(IntEnum):
+    X = auto() + 1

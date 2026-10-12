@@ -114,7 +114,7 @@ static int build_directory_valid(char *directory) {
 
 int project_load(Project *project, const char *path) {
   char text[16385], value[MAX_PATH], entry[MAX_PATH] = "main.py";
-  const char *tables[] = {"project", "target", "build", "emulator", "assets"};
+  const char *tables[] = {"project", "target", "build", "runner", "assets"};
   const char *keys[] = {"name",     "entry",      "machine",  "directory",
                         "optimize", "executable", "directory"};
   const int owners[] = {0, 0, 1, 2, 2, 3, 4};
@@ -170,6 +170,10 @@ int project_load(Project *project, const char *path) {
       for (table = 0; table < 5; ++table)
         if (!strcmp(start, tables[table]))
           break;
+      if (table == 5 && !strcmp(start, "emulator"))
+        return error(path, line,
+                     "[emulator] was replaced by [runner]; 'pyc64c run' uses "
+                     "pyc64run");
       if (table == 5)
         return error(path, line, "unsupported project table");
       if (seen_tables & (1u << table))
@@ -230,8 +234,8 @@ int project_load(Project *project, const char *path) {
       break;
     case 5:
       if (!*value)
-        return error(path, line, "emulator.executable must not be empty");
-      strcpy(project->emulator, value);
+        return error(path, line, "runner.executable must not be empty");
+      strcpy(project->runner, value);
       break;
     case 6:
       if (!*value)
@@ -245,10 +249,10 @@ int project_load(Project *project, const char *path) {
     return error(path, line, "project.name is required");
   if (!desktop_join(project->entry, project->root, entry))
     return 0;
-  /* Bare emulator names use PATH; paths are relative to the configuration. */
-  if (strchr(project->emulator, '/') || strchr(project->emulator, '\\')) {
-    strcpy(value, project->emulator);
-    if (!desktop_join(project->emulator, project->root, value))
+  /* Bare runner names use PATH; paths are relative to the configuration. */
+  if (strchr(project->runner, '/') || strchr(project->runner, '\\')) {
+    strcpy(value, project->runner);
+    if (!desktop_join(project->runner, project->root, value))
       return 0;
   }
   return 1;

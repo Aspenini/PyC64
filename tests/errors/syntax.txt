@@ -1,0 +1,154 @@
+# error: does not fit in u8
+from pyc64.types import u8
+x: u8 = 300
+
+# ---
+# error: does not fit in u8
+from pyc64.types import u8
+x: u8 = 255 + 1
+
+# ---
+# error: unknown variable
+x = missing
+
+# ---
+# error: tabs
+if True:
+	x = 1
+
+# ---
+# error: unsupported or unknown function
+x = eval("1")
+
+# ---
+# error: out of bounds
+from pyc64.types import array, u8
+a: array[u8, 2] = array(u8, 2)
+x = a[2]
+
+# ---
+# error: recursion
+from pyc64.types import u8
+def f(a: u8) -> u8:
+    return f(a)
+
+# ---
+# error: every path
+from pyc64.types import u8
+def f(a: u8) -> u8:
+    if a:
+        return a
+
+# ---
+# error: requires target 'c64-ultimate'
+from c64ultimate import turbo
+
+# ---
+# error: outside a function
+return 1
+
+# ---
+# error: outside a loop
+break
+
+# ---
+# error: step cannot be zero
+for i in range(1, 2, 0):
+    pass
+
+# ---
+# error: 16-bit integer range
+x = 65535 * 65535
+
+# ---
+# error: explicit cast
+from pyc64.types import i16, u16
+a: u16 = 65535
+b: i16 = -1
+x: bool = a < b
+
+# ---
+# error: annotation alone
+from pyc64.types import u8
+x: u8
+
+# ---
+# error: annotation alone
+from pyc64.types import array, u8
+a: array[u8, 4]
+
+# ---
+# error: before initialization
+flag: bool = True
+if flag:
+    x = 7
+y = x
+
+# ---
+# error: before initialization
+for i in range(0):
+    x = 7
+y = x
+
+# ---
+# error: before initialization
+flag: bool = False
+while flag:
+    x = 7
+x += 1
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+x = 7
+def bad() -> u8:
+    y = x
+    x = 9
+    return y
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+x = 7
+def bad() -> u8:
+    x = x + 1
+    return x
+
+# ---
+# error: does not match
+from pyc64.types import array, u8
+a: array[u8, 4] = array(u8, 3)
+
+# ---
+# error: assigned to a variable
+from pyc64.types import array, u8
+array(u8, 4)
+
+# ---
+# error: end of statement
+const COUNT: u8 = 10
+
+# ---
+# error: import fixed-width types
+x: u8 = 1
+
+# ---
+# error: unknown function
+x = u8(1)
+
+# ---
+# error: unknown function
+x = peek(49152)
+
+# ---
+# error: unsupported type
+COUNT: Final = 1
+
+# ---
+# error: Python keyword
+class = 1
+
+# ---
+# error: Python keyword
+def f(if: bool):
+    pass

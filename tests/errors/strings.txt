@@ -1,0 +1,54 @@
+# error: string index is out of bounds
+print("abc"[3])
+
+# ---
+# error: string index is out of bounds
+print("abc"[-4])
+
+# ---
+# error: strings are immutable
+text = "abc"
+text[0] = "z"
+
+# ---
+# error: strings are immutable
+text = "abc"
+text[0] += "z"
+
+# ---
+# error: one-character string
+print(ord(""))
+
+# ---
+# error: one-character string
+print(ord("ab"))
+
+# ---
+# error: ASCII values
+print(chr(0))
+
+# ---
+# error: ASCII values
+print(chr(128))
+
+# ---
+# error: requires an integer
+print(chr("a"))
+
+# ---
+# error: ord requires
+print(ord(3))
+
+# ---
+# error: unsupported string operator
+text = "a" + "b"
+
+# ---
+# error: requires integers
+text = "a"
+number = 3
+print(text == number)
+
+# ---
+# error: string index must be an integer
+print("abc"["a"])

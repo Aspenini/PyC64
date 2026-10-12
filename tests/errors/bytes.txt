@@ -1,0 +1,200 @@
+# error: 0..255
+result = -1 in b""
+
+# ---
+# error: 0..255
+result = 256 not in b""
+
+# ---
+# error: bytes membership
+result = "A" in b"ABC"
+
+# ---
+# error: bytes membership
+result = 1.0 in b"ABC"
+
+# ---
+# error: bytes membership
+result = b"A" in "ABC"
+
+# ---
+# error: bytes membership
+result = 1 in [1, 2]
+
+# ---
+# error: chained comparisons
+result = 65 in b"ABC" == True
+
+# ---
+# error: chained comparisons
+result = 65 == 65 in b"ABC"
+
+# ---
+# error: expected 'in'
+result = 65 not True
+
+# ---
+# error: recursion
+def receiver() -> bytes:
+    value = receiver().find(b"x")
+    return b"x"
+result = receiver().find(b"x")
+
+# ---
+# error: subsequence was not found
+result = b"abc".index(b"x")
+
+# ---
+# error: 0..255
+result = b"abc".find(-1)
+
+# ---
+# error: 0..255
+result = b"abc".count(256)
+
+# ---
+# error: bytes search requires
+result = b"abc".find("a")
+
+# ---
+# error: require bytes
+result = b"abc".startswith(65)
+
+# ---
+# error: bounds require integers
+result = b"abc".find(b"a", 1.0)
+
+# ---
+# error: expect a needle
+result = b"abc".find()
+
+# ---
+# error: expect a needle
+result = b"abc".count(b"a", 0, 3, 1)
+
+# ---
+# error: unsupported bytes method
+result = b"abc".split(b"a")
+
+# ---
+# error: recursion
+from pyc64.types import i16
+def cut(data: bytes) -> bytes:
+    return data[::step()]
+def step() -> i16:
+    value = cut(b"x")
+    return len(value)
+result = cut(b"abc")
+
+# ---
+# error: step cannot be zero
+result = b"abc"[::0]
+
+# ---
+# error: step cannot be zero
+data = b"abc"
+result = data[::False]
+
+# ---
+# error: require integers
+result = b"abc"[1.0:]
+
+# ---
+# error: require integers
+result = b"abc"[:"x"]
+
+# ---
+# error: require integers
+result = b"abc"[::1.5]
+
+# ---
+# error: bytes are immutable
+data = b"abc"
+data[:] = b"x"
+
+# ---
+# error: bytes are immutable
+data = b"abc"
+data[1:2] += b"x"
+
+# ---
+# error: slicing currently requires bytes
+data = [1, 2]
+result = data[:]
+
+# ---
+# error: bytes repetition exceeds
+value = b"x" * 32767
+
+# ---
+# error: bytes literal arena exhausted
+value = b"x" * 8191 + b"y" * 8191
+
+# ---
+# error: bytes are immutable
+value = b"x"
+value[0] = 1
+
+# ---
+# error: bytes are immutable
+value = b"x"
+index = 0
+value[index] = 1
+
+# ---
+# error: cannot assign bytes
+value: str = b"x"
+
+# ---
+# error: encoding
+value = bytes("text")
+
+# ---
+# error: encoding
+value = bytes("text", "utf-16")
+
+# ---
+# error: 0..255
+value = bytes([256])
+
+# ---
+# error: 0..255
+value = bytes([-1])
+
+# ---
+# error: require integers
+value = bytes([1.5])
+
+# ---
+# error: requires a count
+value = bytes(1.0)
+
+# ---
+# error: bytes expects
+value = bytes(1, 2, 3)
+
+# ---
+# error: reserved compiler builtin
+bytes = 1
+
+# ---
+# error: two hex digits
+value = b"\x0g"
+
+# ---
+# error: 0..255
+value = b"\777"
+
+# ---
+# error: out of bounds
+value = b"x"[1]
+
+# ---
+# error: one-character
+value = ord(b"")
+
+# ---
+# error: bytes are immutable
+import c64.disk as disk
+data = b"x"
+disk.read_into(2, data, 1)

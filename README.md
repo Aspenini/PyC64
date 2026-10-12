@@ -10,8 +10,8 @@ from libraries, rather than custom language syntax.
 
 ## Get started
 
-Run `PyC64-0.1.0-windows-x64-setup.exe`. The installer includes the compiler,
-libraries and examples. It installs to `C:\PyC64` and requires administrator
+Run `PyC64-0.1.0-windows-x64-setup.exe`. The installer includes the compiler, runner,
+tester, libraries and examples. It installs to `C:\PyC64` and requires administrator
 permission. It does not change PATH. Run the compiler using
 `C:\PyC64\bin\pyc64c.exe`. You do **not** need Python or a compiler toolchain.
 
@@ -30,13 +30,53 @@ print("HELLO FROM PYC64!", score)
 ```
 
 ```powershell
-C:\PyC64\bin\pyc64c.exe build main.py -o MAIN.PRG
-C:\PyC64\bin\pyc64c.exe run main.py --vice "C:\VICE\bin\x64sc.exe"
+C:\PyC64\bin\pyc64c.exe run main.py --rom-dir "C:\C64-ROMs"
 ```
 
-`run` builds and launches [VICE](https://vice-emu.sourceforge.io/); replace its
-path with yours, or omit `--vice` when `x64sc` is on PATH. VICE and C64 ROMs are
-not bundled. You can also load the resulting PRG on a C64.
+`run` builds `main.PRG` and opens it in `pyc64run`, a PAL C64 with video, keyboard,
+joystick and SID audio. Supply `basic.rom`, `kernal.rom` and `chargen.rom` in the
+ROM folder (VICE's original filenames also work), or set `PYC64_ROM_DIR` once and
+omit `--rom-dir`. ROMs are not bundled. `build` writes the PRG without running it;
+you can also load it on a real C64 or in another emulator.
+
+## Run and test
+
+PyC64 ships three programs:
+
+| Program | Purpose | Emulator |
+| --- | --- | --- |
+| `pyc64c` | Compiler and project tool | — |
+| `pyc64run` | Play a PRG in a window, or check it headless | [ChronoCoders/C64](https://github.com/ChronoCoders/C64) |
+| `pyc64test` | Headless machine-code tests | [floooh/chips](https://github.com/floooh/chips) |
+
+In the `pyc64run` window, F12 closes; Escape is RUN/STOP, Page Up is RESTORE, Tab
+is CTRL and Left Alt is Commodore. Numpad 8/2/4/6 and Right Ctrl control joystick 2.
+Add `--headless` to run `--frames N` (default 300) without a window, then check
+`--expect ADDRESS=BYTE` or `--expect-screen TEXT`.
+
+`pyc64c run` passes `--rom-dir DIR` and anything after `--` to `pyc64run`, for
+example `pyc64c run -- --headless --frames 100 --expect-screen READY`. It uses the
+`pyc64run` installed beside `pyc64c`; `--runner FILE`, `PYC64_RUNNER` or a project's
+`[runner] executable` select another. `pyc64c sid FILE.sid --run` works the same way.
+
+`pyc64test` runs the PRG on chips' cycle-stepped 6502 with flat RAM by default.
+CHROUT and GETIN are handled by the tester; the test passes when the program returns
+within `--cycles N` and every check holds. No ROMs are needed:
+
+```powershell
+C:\PyC64\bin\pyc64test.exe MAIN.PRG --expect-text "HELLO FROM PYC64!" --expect 0xC000=42
+C:\PyC64\bin\pyc64test.exe MAIN.PRG --expect-reg SP=0xF0 --trace trace.txt
+C:\PyC64\bin\pyc64test.exe MAIN.PRG --machine --rom-dir C:\C64-ROMs --frames 60 --expect-screen "HELLO FROM PYC64!"
+```
+
+`--trace FILE` logs every instruction with its cycle count and registers.
+`--machine` runs chips' complete PAL C64 instead, for IRQs, graphics, keyboard,
+joystick and music; it needs ROMs and an `--expect` or `--expect-screen` check.
+Both tools accept `--input "hello\r"`, `--entry ADDRESS` and `--ram FILE`; machine
+runs also take `--key CODE`, `--joystick MASK`, `--screenshot FILE.bmp` and
+`--audio FILE.wav`. Exit status is 1 when a check fails, so either tool fits a CI
+script. ROMs can also come from `PYC64_ROM_DIR`. NTSC, REU and disk-image mounting
+are deferred.
 
 ## Projects and commands
 
@@ -48,11 +88,11 @@ C:\PyC64\bin\pyc64c.exe build
 
 `new` creates `main.py`, `pyc64.toml` and `.gitignore`. Commands without a source
 file use that configuration and its build folder. Use `--project FILE` to select
-another project; configure its target, assets and VICE executable in TOML.
+another project; configure its target and assets in TOML.
 
 | Command | Purpose |
 | --- | --- |
-| `build` / `run` | Write a native PRG / build and launch VICE |
+| `build` / `run` | Write a native PRG / build and open it in `pyc64run` |
 | `check` | Check source without writing a PRG |
 | `size` | Report code, data and asset sizes |
 | `asm` | Write a readable native instruction listing |
@@ -93,8 +133,9 @@ Browse [examples](examples) for complete programs. Library signatures are in
 Examples with assets have a `pyc64.toml`: build
 those with `C:\PyC64\bin\pyc64c.exe build --project examples\assets\pyc64.toml`.
 
-The default target is `c64`; `--target c64-reu` enables REU APIs and a 512 KiB REU
-when using `run`. Larger REUs need explicit VICE configuration. `c64-ultimate`
+The default target is `c64`; `--target c64-reu` enables REU APIs. `pyc64run` does
+not emulate an REU yet, so `run` warns and the program sees no expansion; test REU
+programs in VICE (`x64sc -reu -reusize 512 -autostart MAIN.PRG`). `c64-ultimate`
 currently provides REU access; Ultimate-specific APIs and hosting are future work.
 
 For RSID files that need full control of the machine:
@@ -132,20 +173,26 @@ macOS and real-hardware coverage are not yet release-validated.
 
 Use [xmake](https://xmake.io/) 2.8.5+ and Visual Studio's C++ build tools/Windows SDK.
 Windows defaults to MSVC; `--toolchain=clang-cl` selects Clang's compatible driver.
-Both use a static runtime. The native C64 backend needs no LLVM-MOS, cc65 or assembler.
+Both use a static runtime. xmake fetches SDL2 for `pyc64run` and links it statically
+on Windows; `pyc64test` has no SDL dependency. The native compiler needs no LLVM-MOS, cc65 or assembler.
+The emulator cores are pinned git submodules in `third_party/`; xmake initializes
+them on first build, or run `git submodule update --init` yourself.
 
 ```powershell
+git clone --recurse-submodules https://github.com/Aspenini/PyC64.git
+cd PyC64
 xmake f -m release
 xmake
 xmake install -o build/cli-install
 & 'C:\Program Files\Inno Setup 7\ISCC.exe' packaging\PyC64.iss
 ```
 
-The executable is `build/windows/x64/release/pyc64c.exe`; Inno Setup 7 writes to
+`pyc64c`, `pyc64run` and `pyc64test` are in `build/windows/x64/release/`; Inno Setup 7 writes to
 `build/installer/`. Use `xmake f -m debug` for debugging. Explicit GCC/Clang
 toolchains are supported; their runtime dependencies may differ.
 
-On Linux, use GCC or Clang with xmake:
+On Linux, install SDL2 development files (Ubuntu: `sudo apt install libsdl2-dev`),
+then use GCC or Clang with xmake:
 
 ```sh
 xmake f -m release --toolchain=gcc
@@ -154,19 +201,21 @@ xmake install -o "$HOME/.local"
 "$HOME/.local/bin/pyc64c" --version
 ```
 
-The executable is `build/linux/x86_64/release/pyc64c`. Use `--toolchain=clang`
+The three executables are in `build/linux/x86_64/release/`. Use `--toolchain=clang`
 to select Clang. Keep the installed `bin/` and `share/` directories together.
 
-Tests require Python 3.11+:
+`xmake test` compiles and runs the suite in [tests](tests): about 300 small Python
+programs, compile-error cases, command-line checks and example builds, each reported
+as its own test. Programs run on `pyc64test`; machine tests run the same PRG on both
+`pyc64test --machine` and `pyc64run --headless`. CPython 3.11+ confirms that programs
+marked as Python-compatible print the same output; there are no pip dependencies.
 
 ```powershell
-python -m pip install --target build/test-deps -r tests/requirements.txt
+xmake f --basic_rom=C:\C64-ROMs\basic.rom --kernal_rom=C:\C64-ROMs\kernal.rom
 xmake test
+xmake test "pyc64_tests/machine_*"
 ```
 
-There is **one xmake integration suite containing 330 cases**. For individual
-results, run `python tests/test_compiler.py build/windows/x64/release/pyc64c.exe -v`.
-Thirty-two cases need C64 ROMs: configure `--basic_rom=PATH` and, if not detected
-beside it, `--kernal_rom=PATH`. They are skipped without ROMs. Optional VICE
-fixtures live in [tests](tests).
-
+Float, math and full-machine tests need the C64 ROMs; a character ROM beside BASIC
+(or `--chargen_rom`) enables machine tests. Tests whose ROMs or CPython are missing
+are skipped and counted. See [tests/README.md](tests/README.md) to add a test.

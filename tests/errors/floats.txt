@@ -1,0 +1,107 @@
+# error: incompatible inferred types
+value = 1.0
+value %= "text"
+
+# ---
+# error: cannot assign float
+value = 1
+value /= 2
+
+# ---
+# error: augmented array assignment
+values = [1.0]
+values[0] %= 2.0
+
+# ---
+# error: cannot declare a type
+value: float //= 2.0
+
+# ---
+# error: finite C64 range
+value = 1e39
+
+# ---
+# error: underscore
+value = 1.2__3
+
+# ---
+# error: invalid float
+value = 1e+
+
+# ---
+# error: unsupported float
+value = 1.5 & 1
+
+# ---
+# error: expects 1
+float("a", "b")
+
+# ---
+# error: float requires
+float([1])
+
+# ---
+# error: 16-bit integer range
+value = 2**16
+
+# ---
+# error: 16-bit integer range
+value = 300**300
+
+# ---
+# error: does not fit
+from pyc64.types import u8
+value: u8 = pow(2, 8)
+
+# ---
+# error: two arguments
+pow(2, 3, 5)
+
+# ---
+# error: binary operator requires
+pow("x", 2)
+
+# ---
+# error: parentheses
+value = 2**not True
+
+# ---
+# error: cannot assign
+import math
+math.sqrt("x")
+
+# ---
+# error: expects 1 arguments
+import math
+math.log(2, 10)
+
+# ---
+# error: unsupported or unknown
+import math
+math.hypot(3, 4)
+
+# ---
+# error: constant
+import math
+math.pi = 3.0
+
+# ---
+# error: unknown pyc64._math export
+from pyc64._math import nope
+
+# ---
+# error: bases are unsupported
+int("10", 2)
+
+# ---
+# error: int requires
+int([1])
+
+# ---
+# error: does not fit
+value: int = 40000
+
+# ---
+# error: cannot assign
+from math import floor
+floor("x")

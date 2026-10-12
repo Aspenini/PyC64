@@ -1,0 +1,25 @@
+# error: print supports strings, integers and booleans
+from pyc64.types import array, u8
+values = array(u8, 3)
+print(values)
+
+# ---
+# error: print supports strings, integers and booleans
+from c64.memory import poke
+print(poke(4096, 1))
+
+# ---
+# error: keyword arguments are not supported
+print("hello", end="")
+
+# ---
+# error: zero or one string prompt
+input("one", "two")
+
+# ---
+# error: cannot assign
+input(123)
+
+# ---
+# error: reserved compiler builtin
+input = 1

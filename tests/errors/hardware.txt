@@ -1,0 +1,350 @@
+# error: ROM-dependent
+from c64 import irq
+def callback():
+    print("unsafe")
+irq.on_raster(100, callback)
+
+# ---
+# error: ROM-dependent
+from c64 import irq
+def callback():
+    input()
+irq.on_raster(100, callback)
+
+# ---
+# error: floating-point
+from c64 import irq
+def callback():
+    value = float(1)
+irq.on_raster(100, callback)
+
+# ---
+# error: floating-point
+from c64 import irq
+def callback():
+    value = 1.0 < 2.0
+irq.on_raster(100, callback)
+
+# ---
+# error: ROM-dependent
+from c64 import irq
+def callback():
+    value = int("2")
+irq.on_raster(100, callback)
+
+# ---
+# error: runtime bytes
+from pyc64.types import u8
+from c64 import irq
+def callback():
+    count: u8 = 3
+    value = bytes(count)
+irq.on_raster(100, callback)
+
+# ---
+# error: allocate immutable
+from c64 import irq
+def callback():
+    data = b"x"
+    value = data * 2
+irq.on_raster(100, callback)
+
+# ---
+# error: allocate immutable
+from c64 import irq
+def callback():
+    data = b"xyz"
+    value = data[1:]
+irq.on_raster(100, callback)
+
+# ---
+# error: failure messages
+from c64 import irq
+def callback():
+    assert False, "unsafe"
+irq.on_raster(100, callback)
+
+# ---
+# error: foreground code
+from c64 import irq
+def callback():
+    irq.on_raster(100, callback)
+irq.on_raster(100, callback)
+
+# ---
+# error: ROM-dependent
+# at: unsafe.py:2
+from c64 import irq
+from unsafe import callback
+irq.on_raster(100, callback)
+# file: unsafe.py
+def helper():
+    print("unsafe")
+def callback():
+    helper()
+
+# ---
+# error: zero-argument
+from c64 import irq
+def callback(value):
+    pass
+irq.on_raster(100, callback)
+
+# ---
+# error: return None
+from c64 import irq
+def callback():
+    return 1
+irq.on_raster(100, callback)
+
+# ---
+# error: static zero-argument
+from c64 import irq
+irq.on_raster(100, 42)
+
+# ---
+# error: source function
+from c64 import irq
+irq.on_raster(100, missing)
+
+# ---
+# error: 0..511
+from c64 import irq
+def callback():
+    pass
+irq.on_raster(512, callback)
+
+# ---
+# error: line and a callback
+from c64 import irq
+def callback():
+    pass
+irq.on_raster(100)
+
+# ---
+# error: limit 80
+from pyc64.types import u8
+from c64 import irq
+def f0() -> u8:
+    return 0
+def f1() -> u8:
+    return f0()
+def f2() -> u8:
+    return f1()
+def f3() -> u8:
+    return f2()
+def f4() -> u8:
+    return f3()
+def f5() -> u8:
+    return f4()
+def f6() -> u8:
+    return f5()
+def f7() -> u8:
+    return f6()
+def f8() -> u8:
+    return f7()
+def f9() -> u8:
+    return f8()
+def f10() -> u8:
+    return f9()
+def f11() -> u8:
+    return f10()
+def f12() -> u8:
+    return f11()
+def f13() -> u8:
+    return f12()
+def f14() -> u8:
+    return f13()
+def f15() -> u8:
+    return f14()
+def f16() -> u8:
+    return f15()
+def f17() -> u8:
+    return f16()
+def f18() -> u8:
+    return f17()
+def f19() -> u8:
+    return f18()
+def f20() -> u8:
+    return f19()
+def f21() -> u8:
+    return f20()
+def f22() -> u8:
+    return f21()
+def f23() -> u8:
+    return f22()
+def f24() -> u8:
+    return f23()
+def f25() -> u8:
+    return f24()
+def f26() -> u8:
+    return f25()
+def f27() -> u8:
+    return f26()
+def f28() -> u8:
+    return f27()
+def f29() -> u8:
+    return f28()
+def f30() -> u8:
+    return f29()
+def f31() -> u8:
+    return f30()
+def f32() -> u8:
+    return f31()
+def f33() -> u8:
+    return f32()
+def f34() -> u8:
+    return f33()
+def f35() -> u8:
+    return f34()
+def f36() -> u8:
+    return f35()
+def f37() -> u8:
+    return f36()
+def f38() -> u8:
+    return f37()
+def f39() -> u8:
+    return f38()
+def f40() -> u8:
+    return f39()
+def callback():
+    f40()
+irq.on_raster(100, callback)
+
+# ---
+# error: unknown c64._reu export
+# pyc64c: --target c64-reu
+from c64._reu import missing
+
+# ---
+# error: expects 6 arguments
+# pyc64c: --target c64-reu
+from c64._reu import transfer
+result = transfer(0, 0, 0)
+
+# ---
+# error: requires target 'c64-reu'
+from c64 import reu
+
+# ---
+# error: requires target 'c64-reu'
+import c64.reu
+
+# ---
+# error: requires target 'c64-reu'
+from c64.reu import store
+
+# ---
+# error: requires target 'c64-reu'
+from c64._reu import present
+
+# ---
+# error: requires target 'c64-reu'
+# at: bridge.py:1
+import bridge
+# file: bridge.py
+from c64 import reu
+
+# ---
+# error: expects 4 arguments
+from c64.kernal import open, write_byte, read_byte, status
+open(2, 8, 2)
+
+# ---
+# error: str
+from c64.kernal import open, write_byte, read_byte, status
+open(2, 8, 2, 42)
+
+# ---
+# error: u8
+from c64.kernal import open, write_byte, read_byte, status
+open(256, 8, 2, "data")
+
+# ---
+# error: u8
+from c64.kernal import open, write_byte, read_byte, status
+write_byte(2, -1)
+
+# ---
+# error: expects 1 arguments
+from c64.kernal import open, write_byte, read_byte, status
+read_byte()
+
+# ---
+# error: expects 0 arguments
+from c64.kernal import open, write_byte, read_byte, status
+status(2)
+
+# ---
+# error: at most 255 bytes
+from c64.kernal import open
+open(2, 8, 2, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+
+# ---
+# error: sprite index must be 0..7
+import c64.sprite as sprite
+sprite.enable(8)
+
+# ---
+# error: sprite X coordinate must be 0..511
+import c64.sprite as sprite
+sprite.position(0, 512, 1)
+
+# ---
+# error: sprite color must be 0..15
+import c64.sprite as sprite
+sprite.color(0, 16)
+
+# ---
+# error: 64-byte aligned
+import c64.sprite as sprite
+sprite.data(0, 12289)
+
+# ---
+# error: VIC bank 0
+import c64.sprite as sprite
+sprite.data(0, 16384)
+
+# ---
+# error: float fields
+from c64 import irq
+class P:
+    value: float = 1.0
+def callback():
+    instance = P()
+irq.on_raster(100, callback)
+
+# ---
+# error: unknown c64.irq export
+from c64.irq import missing
+
+# ---
+# error: str
+from c64.disk import write_text
+write_text(2, 42)
+
+# ---
+# error: expects 2 arguments
+from c64.disk import write_text
+write_text(2)
+
+# ---
+# error: read-only
+from c64.sprite import Sprite
+p = Sprite(0)
+p.index = 2
+
+# ---
+# error: has no export 'missing'
+from c64.sid import missing
+
+# ---
+# error: does not fit in u8
+import c64.sid as sid
+sid.volume(256)
+
+# ---
+# error: read-only
+from c64.sid import Voice
+p = Voice(0)
+p.index = 1

@@ -1,0 +1,119 @@
+# error: cannot assign to constant
+from typing import Final
+SIZE: Final = 4
+SIZE = 9
+
+# ---
+# error: cannot assign to constant
+from typing import Final
+SIZE: Final = 4
+SIZE += 1
+
+# ---
+# error: loop variable
+from typing import Final
+SIZE: Final = 4
+for SIZE in range(2):
+    pass
+
+# ---
+# error: duplicate declaration
+from typing import Final
+SIZE: Final = 4
+SIZE: Final = 5
+
+# ---
+# error: compile-time value
+from typing import Final
+value = 4
+SIZE: Final = value
+
+# ---
+# error: compile-time value
+from typing import Final
+from c64.memory import peek
+SIZE: Final = peek(49152)
+
+# ---
+# error: does not fit in u8
+from pyc64.types import u8
+from typing import Final
+SIZE: Final[u8] = 256
+
+# ---
+# error: 16-bit integer range
+from typing import Final
+BASE: Final = 65535
+SIZE: Final = BASE + 1
+
+# ---
+# error: division by zero
+from typing import Final
+ZERO: Final = 0
+SIZE: Final = 1 // ZERO
+
+# ---
+# error: shift count
+from typing import Final
+SHIFT: Final = 16
+SIZE: Final = 1 << SHIFT
+
+# ---
+# error: unknown variable
+from typing import Final
+SIZE: Final = LATER
+LATER: Final = 4
+
+# ---
+# error: module scope
+from typing import Final
+if True:
+    SIZE: Final = 4
+
+# ---
+# error: module scope
+from typing import Final
+def f():
+    SIZE: Final = 4
+
+# ---
+# error: constant type
+from pyc64.types import array
+from typing import Final
+SIZE: Final[array] = 4
+
+# ---
+# error: requires a value
+from pyc64.types import u8
+from typing import Final
+SIZE: Final[u8]
+
+# ---
+# error: compile-time integer
+from pyc64.types import array, u8
+size = 4
+values: array[u8, size] = array(u8, size)
+
+# ---
+# error: 1..16384
+from pyc64.types import array, u8
+from typing import Final
+SIZE: Final = 0
+values: array[u8, SIZE] = array(u8, SIZE)
+
+# ---
+# error: out of bounds
+from pyc64.types import array, u8
+from typing import Final
+SIZE: Final = 2
+values: array[u8, SIZE] = array(u8, SIZE)
+x = values[SIZE]
+
+# ---
+# error: does not fit in u8
+# at: broken.py:3
+import broken
+# file: broken.py
+from typing import Final
+from pyc64.types import u8
+SMALL: Final[u8] = 300

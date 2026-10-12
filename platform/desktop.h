@@ -4,18 +4,22 @@
 
 typedef struct {
   char file[MAX_PATH], root[MAX_PATH], name[64], entry[MAX_PATH];
-  char directory[MAX_PATH], machine[32], emulator[MAX_PATH];
+  char directory[MAX_PATH], machine[32], runner[MAX_PATH];
   char assets[MAX_PATH];
 } Project;
 int desktop_asset_command(int argc, char **argv);
-int desktop_sid_command(int argc, char **argv);
+int desktop_sid_command(const char *executable, int argc, char **argv);
 
 int desktop_absolute(const char *path, char *out);
 int desktop_join(char *out, const char *root, const char *path);
 int desktop_directory(const char *path);
 int desktop_mkdir(const char *path);
 int desktop_project_directory(const Project *project, int create);
-int desktop_launch(const char *executable, const char *prg, int reu);
+#define MAX_RUN_ARGUMENTS 64
+/* Launches pyc64run (or an override) on PRG and waits for it to exit. */
+int desktop_run(const char *runner, const char *prg, const char *rom_dir,
+                int argc, char **argv);
+void desktop_default_runner(const char *executable, char *out);
 void desktop_stdlib(Compiler *c, const char *executable);
 int project_load(Project *project, const char *path);
 int project_new(const char *name);

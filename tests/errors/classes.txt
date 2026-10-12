@@ -1,0 +1,328 @@
+# error: require a class method
+@property
+def value():
+    return 1
+
+# ---
+# error: only @property
+class P:
+    @staticmethod
+    def value(self):
+        return 1
+
+# ---
+# error: getter requires
+class P:
+    @property
+    def value(self, extra):
+        return 1
+
+# ---
+# error: preceding @property
+class P:
+    @value.setter
+    def value(self, value):
+        pass
+
+# ---
+# error: same name
+class P:
+    @property
+    def value(self):
+        return 1
+    @value.setter
+    def other(self, value):
+        pass
+
+# ---
+# error: return None
+from pyc64.types import u8
+class P:
+    @property
+    def value(self):
+        return 1
+    @value.setter
+    def value(self, value) -> u8:
+        return value
+
+# ---
+# error: read-only
+class P:
+    @property
+    def value(self):
+        return 1
+p = P()
+p.value = 2
+
+# ---
+# error: getter must return
+class P:
+    @property
+    def value(self):
+        pass
+p = P()
+print(p.value)
+
+# ---
+# error: conflicts with field
+from pyc64.types import u8
+class P:
+    value: u8 = 1
+    @property
+    def value(self):
+        return 1
+
+# ---
+# error: conflicts with property
+class P:
+    @property
+    def value(self):
+        return 1
+    def value(self):
+        return 2
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    _value: u8
+    @property
+    def value(self):
+        return self._value
+    def __init__(self):
+        print(self.value)
+        self._value = 1
+p = P()
+
+# ---
+# error: recursion
+from pyc64.types import u8
+class P:
+    @property
+    def value(self) -> u8:
+        return self.value
+p = P()
+print(p.value)
+
+# ---
+# error: recursion
+from pyc64.types import u8
+class P:
+    @property
+    def value(self) -> u8:
+        return 1
+    @value.setter
+    def value(self, value: u8):
+        self.value = value
+p = P()
+p.value = 1
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+p = P()
+print(p.x)
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+    def get(self):
+        return self.x
+p = P()
+p.get()
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+    def __init__(self):
+        pass
+p = P()
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+    def __init__(self, flag: bool):
+        if flag:
+            self.x = 1
+p = P(True)
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+    def __init__(self):
+        self.x += 1
+p = P()
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+    def __init__(self):
+        return
+        self.x = 1
+p = P()
+
+# ---
+# error: before initialization
+from pyc64.types import u8
+class P:
+    x: u8
+p = P()
+if True:
+    p.x = 1
+print(p.x)
+
+# ---
+# error: annotated scalar fields
+class P:
+    x = 1
+
+# ---
+# error: annotated scalar fields
+from pyc64.types import u8
+class P:
+    x: list[u8] = [1]
+
+# ---
+# error: compile-time scalar
+from pyc64.types import u8
+from c64.memory import peek
+class P:
+    x: u8 = peek(4096)
+
+# ---
+# error: does not fit
+from pyc64.types import u8
+class P:
+    x: u8 = 300
+
+# ---
+# error: duplicate field
+from pyc64.types import u8
+class P:
+    x: u8
+    x: u8
+
+# ---
+# error: conflicts with field
+from pyc64.types import u8
+class P:
+    x: u8
+    def x(self):
+        pass
+
+# ---
+# error: self parameter
+class P:
+    def method():
+        pass
+
+# ---
+# error: first method parameter
+class P:
+    def method(value):
+        pass
+
+# ---
+# error: __init__ must return None
+from pyc64.types import u8
+class P:
+    def __init__(self) -> u8:
+        return 1
+
+# ---
+# error: expects no arguments
+class P:
+    pass
+p = P(1)
+
+# ---
+# error: object aliases
+class P:
+    pass
+p = P()
+q = p
+
+# ---
+# error: object rebinding
+class P:
+    pass
+p = P()
+p = P()
+
+# ---
+# error: list elements
+class P:
+    pass
+p = P()
+values = [p]
+
+# ---
+# error: print supports
+class P:
+    pass
+p = P()
+print(p)
+
+# ---
+# error: has no field
+class P:
+    pass
+p = P()
+print(p.missing)
+
+# ---
+# error: object return values
+class P:
+    pass
+def f(value: P):
+    return value
+p = P()
+f(p)
+
+# ---
+# error: same class type
+class P:
+    pass
+class Q:
+    pass
+def f(value: P):
+    pass
+q = Q()
+f(q)
+
+# ---
+# error: inheritance
+class P:
+    pass
+class Q(P):
+    pass
+
+# ---
+# error: recursion
+class P:
+    def run(self):
+        self.run()
+p = P()
+p.run()
+
+# ---
+# error: recursion
+class P:
+    def first(self):
+        self.second()
+    def second(self):
+        self.first()
+p = P()
+p.first()

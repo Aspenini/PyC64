@@ -6,31 +6,43 @@ pkgdesc='A Python subset and C64 libraries compiled to native 6502/6510 programs
 arch=('x86_64')
 url='https://github.com/Aspenini/PyC64'
 license=('MIT')
-depends=('glibc')
-makedepends=('xmake>=2.8.5')
+depends=('glibc' 'gcc-libs' 'sdl2')
+makedepends=('git' 'xmake>=2.8.5')
 checkdepends=('python>=3.11')
-optdepends=('vice: launch generated programs with pyc64c run')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
-        'https://files.pythonhosted.org/packages/15/de/8ceb654608a24ae247ac44443b369f70183d9a39d94e682ddb3c9767b330/py65-1.2.tar.gz')
-sha256sums=('83c98c55b1dbe483ff7a1ee0bee8b7bb88df6c4344f8d728b39c3d086551cec1'
-            'e1cb213823fc6ea8aecb219939943144b09439e5c14b3406cb5ca825d5875b93')
+optdepends=('vice: cross-check generated programs, including REU targets')
+# The existing v0.1.0 archive predates pyc64run and pyc64test. Use the development source until
+# an archive containing these binaries is published, then pin that archive/hash.
+# Upload this recipe only after the corresponding runner changes are pushed.
+source=("$pkgname::git+$url.git#branch=master"
+        'chips::git+https://github.com/floooh/chips.git'
+        'chrono-c64::git+https://github.com/ChronoCoders/C64.git')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+prepare() {
+  cd "$srcdir/$pkgname"
+  # Use makepkg's clones for the pinned emulator submodules.
+  git submodule init
+  git config submodule.third_party/chips.url "$srcdir/chips"
+  git config submodule.third_party/chrono.url "$srcdir/chrono-c64"
+  git -c protocol.file.allow=always submodule update
+}
 
 build() {
-  cd "$srcdir/PyC64-$pkgver"
+  cd "$srcdir/$pkgname"
   xmake f --yes --plat=linux --arch=x86_64 --mode=release --toolchain=gcc \
-    --cflags="$CFLAGS $CPPFLAGS" --ldflags="$LDFLAGS" --python=python3
+    --cflags="$CFLAGS $CPPFLAGS" --cxxflags="$CXXFLAGS $CPPFLAGS" \
+    --ldflags="$LDFLAGS" --python=python3
   xmake
 }
 
 check() {
-  cd "$srcdir/PyC64-$pkgver"
-  # py65 is only used from the extracted source tree; it is not installed.
+  cd "$srcdir/$pkgname"
   # ROM-dependent tests are skipped unless the user's C64 ROMs are configured.
-  PYTHONPATH="$srcdir/py65-1.2${PYTHONPATH:+:$PYTHONPATH}" xmake test -v
+  xmake test
 }
 
 package() {
-  cd "$srcdir/PyC64-$pkgver"
+  cd "$srcdir/$pkgname"
   # makepkg runs package() in fakeroot; install only into its staging directory.
   XMAKE_ROOT=y xmake install -o "$pkgdir/usr"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"

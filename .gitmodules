@@ -1,0 +1,6 @@
+[submodule "third_party/chips"]
+	path = third_party/chips
+	url = https://github.com/floooh/chips.git
+[submodule "third_party/chrono"]
+	path = third_party/chrono
+	url = https://github.com/ChronoCoders/C64.git

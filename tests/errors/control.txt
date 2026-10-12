@@ -1,0 +1,142 @@
+# error: assert condition
+values = [1]
+assert values
+
+# ---
+# error: assert message must be a string
+assert True, 5
+
+# ---
+# error: recursion
+def f() -> bool:
+    assert f()
+    return True
+f()
+
+# ---
+# error: return value required
+from pyc64.types import u8
+def f() -> u8:
+    return None
+f()
+
+# ---
+# error: return outside a function
+return None
+
+# ---
+# error: None
+def f():
+    return None + 1
+f()
+
+# ---
+# error: cannot infer parameter 'value'
+def unused(value):
+    print(value)
+
+# ---
+# error: incompatible inferred types
+def echo(value):
+    return value
+echo(1)
+echo("x")
+
+# ---
+# error: incompatible inferred types
+def echo(value):
+    return value
+echo(True)
+echo(1)
+
+# ---
+# error: incompatible inferred types
+def echo(value):
+    return value
+echo(-1)
+echo(65535)
+
+# ---
+# error: expects 1 arguments
+def echo(value):
+    return value
+echo(1, 2)
+
+# ---
+# error: recursion
+def recurse(value):
+    return recurse(value)
+recurse(1)
+
+# ---
+# error: recursion
+def first(value):
+    return second(value)
+def second(value):
+    return first(value)
+first(1)
+
+# ---
+# error: must return on every path
+def sometimes(value):
+    if value:
+        return 1
+sometimes(True)
+
+# ---
+# error: incompatible inferred types
+def mixed(value):
+    if value:
+        return 1
+    else:
+        return
+mixed(True)
+
+# ---
+# error: no return value
+def echo(value):
+    return value
+echo(print("x"))
+
+# ---
+# error: list/array return values
+def echo(value):
+    return value
+values = [1, 2]
+echo(values)
+
+# ---
+# error: recursion
+from pyc64.types import i16
+def f() -> i16:
+    for i in range(f()):
+        pass
+    return 1
+
+# ---
+# error: range arguments must fit in i16
+for i in range(32768):
+    pass
+
+# ---
+# error: range arguments must fit in i16
+from pyc64.types import u16
+for i in range(u16(32768)):
+    pass
+
+# ---
+# error: step cannot be zero
+from pyc64.types import i8
+for i in range(0, 1, i8(0)):
+    pass
+
+# ---
+# error: range arguments must be integers
+for i in range("three"):
+    pass
+
+# ---
+# error: loop variable must be an integer
+i = "text"
+for i in range(3):
+    pass

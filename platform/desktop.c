@@ -258,92 +258,143 @@ int desktop_project_directory(const Project *project, int create) {
   }
 }
 
-int desktop_launch(const char *executable, const char *prg, int reu) {
-  printf("Launching %s\n", executable);
+#ifdef _WIN32
+/* Appends one argument using the MSVC runtime's command-line quoting rules. */
+static int append_argument(char *out, size_t capacity, size_t *length,
+                           const char *argument) {
+  size_t n = *length, backslashes = 0, need;
+  const char *p;
+  /* Worst case: separator, quotes and every character doubled. */
+  need = n + 3 + 2 * strlen(argument);
+  if (need >= capacity)
+    return 0;
+  if (n)
+    out[n++] = ' ';
+  out[n++] = '"';
+  for (p = argument; *p; ++p) {
+    if (*p == '\\') {
+      ++backslashes;
+      continue;
+    }
+    /* Backslashes are literal unless they precede a quote. */
+    if (*p == '"')
+      backslashes = backslashes * 2 + 1;
+    for (; backslashes; --backslashes)
+      out[n++] = '\\';
+    out[n++] = *p;
+  }
+  for (backslashes *= 2; backslashes; --backslashes)
+    out[n++] = '\\';
+  out[n++] = '"';
+  out[n] = 0;
+  *length = n;
+  return 1;
+}
+#endif
+
+int desktop_run(const char *runner, const char *prg, const char *rom_dir,
+                int argc, char **argv) {
+  const char *args[MAX_RUN_ARGUMENTS + 5];
+  int count = 0, i;
+  if (argc > MAX_RUN_ARGUMENTS) {
+    fputs("error: too many runner arguments\n", stderr);
+    return 1;
+  }
+  args[count++] = runner;
+  args[count++] = prg;
+  if (rom_dir) {
+    args[count++] = "--rom-dir";
+    args[count++] = rom_dir;
+  }
+  for (i = 0; i < argc; ++i)
+    args[count++] = argv[i];
+  args[count] = NULL;
+  printf("Launching %s\n", runner);
   fflush(stdout);
 #ifdef _WIN32
-  char command[MAX_PATH * 2 + 80];
-  STARTUPINFOA startup;
-  PROCESS_INFORMATION process;
-  DWORD status;
-  if (strchr(executable, '"') || strchr(prg, '"') ||
-      strlen(executable) >= MAX_PATH || strlen(prg) >= MAX_PATH) {
-    fputs("error: invalid emulator executable or PRG path\n", stderr);
-    return 1;
-  }
-  snprintf(command, sizeof(command), "\"%s\"%s -autostart \"%s\"", executable,
-           reu ? " -reu -reusize 512" : "", prg);
-  memset(&startup, 0, sizeof(startup));
-  startup.cb = sizeof(startup);
-  if (!CreateProcessA(NULL, command, NULL, NULL, FALSE, 0, NULL, NULL, &startup,
-                      &process)) {
-    fprintf(stderr,
-            "error: cannot launch VICE '%s' (Windows error %lu); use --vice "
-            "PATH or PYC64_VICE\n",
-            executable, (unsigned long)GetLastError());
-    return 1;
-  }
-  CloseHandle(process.hThread);
-  if (WaitForSingleObject(process.hProcess, INFINITE) != WAIT_OBJECT_0 ||
-      !GetExitCodeProcess(process.hProcess, &status)) {
+  {
+    static char command[32768];
+    size_t length = 0;
+    STARTUPINFOA startup;
+    PROCESS_INFORMATION process;
+    DWORD status;
+    command[0] = 0;
+    for (i = 0; i < count; ++i)
+      if (!append_argument(command, sizeof(command), &length, args[i])) {
+        fputs("error: runner command line is too long\n", stderr);
+        return 1;
+      }
+    memset(&startup, 0, sizeof(startup));
+    startup.cb = sizeof(startup);
+    if (!CreateProcessA(NULL, command, NULL, NULL, TRUE, 0, NULL, NULL,
+                        &startup, &process)) {
+      fprintf(stderr,
+              "error: cannot launch runner '%s' (Windows error %lu); use "
+              "--runner PATH or PYC64_RUNNER\n",
+              runner, (unsigned long)GetLastError());
+      return 1;
+    }
+    CloseHandle(process.hThread);
+    if (WaitForSingleObject(process.hProcess, INFINITE) != WAIT_OBJECT_0 ||
+        !GetExitCodeProcess(process.hProcess, &status)) {
+      CloseHandle(process.hProcess);
+      fputs("error: cannot wait for runner\n", stderr);
+      return 1;
+    }
     CloseHandle(process.hProcess);
-    fputs("error: cannot wait for VICE\n", stderr);
-    return 1;
+    return status <= 255 ? (int)status : 1;
   }
-  CloseHandle(process.hProcess);
-  return status <= 255 ? (int)status : 1;
 #else
-  pid_t child;
-  int status;
-  child = fork();
-  if (child == -1) {
-    fputs("error: cannot start VICE process\n", stderr);
-    return 1;
+  {
+    pid_t child;
+    int status;
+    child = fork();
+    if (child == -1) {
+      fputs("error: cannot start runner process\n", stderr);
+      return 1;
+    }
+    if (!child) {
+      execvp(runner, (char **)args);
+      fprintf(stderr,
+              "error: cannot launch runner '%s': %s; use --runner PATH or "
+              "PYC64_RUNNER\n",
+              runner, strerror(errno));
+      _exit(127);
+    }
+    while (waitpid(child, &status, 0) == -1) {
+      if (errno == EINTR)
+        continue;
+      fputs("error: cannot wait for runner\n", stderr);
+      return 1;
+    }
+    return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
   }
-  if (!child) {
-    char *plain_args[] = {(char *)executable, "-autostart", (char *)prg, NULL};
-    char *reu_args[] = {(char *)executable, "-reu",      "-reusize", "512",
-                        "-autostart",       (char *)prg, NULL};
-    char **args = reu ? reu_args : plain_args;
-    execvp(executable, args);
-    fprintf(
-        stderr,
-        "error: cannot launch VICE '%s': %s; use --vice PATH or PYC64_VICE\n",
-        executable, strerror(errno));
-    _exit(127);
-  }
-  while (waitpid(child, &status, 0) == -1) {
-    if (errno == EINTR)
-      continue;
-    fputs("error: cannot wait for VICE\n", stderr);
-    return 1;
-  }
-  return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
 #endif
 }
 
-void desktop_stdlib(Compiler *c, const char *executable) {
-  char root[MAX_PATH], candidate[MAX_PATH], marker[MAX_PATH], *slash;
-  int depth;
-  if (c->nsearch_paths == MAX_SEARCH_PATHS)
-    return;
+/* Directory holding the running pyc64c executable, with '/' separators. */
+static int executable_directory(const char *executable, char *root) {
+  char candidate[MAX_PATH], marker[MAX_PATH], *slash;
 #ifdef _WIN32
-  DWORD length = GetModuleFileNameA(NULL, root, sizeof(root));
+  DWORD length = GetModuleFileNameA(NULL, root, MAX_PATH);
+  int i;
   (void)executable;
-  if (!length || length >= sizeof(root))
-    return;
-  for (depth = 0; root[depth]; ++depth)
-    if (root[depth] == '\\')
-      root[depth] = '/';
+  (void)candidate;
+  (void)marker;
+  if (!length || length >= MAX_PATH)
+    return 0;
+  for (i = 0; root[i]; ++i)
+    if (root[i] == '\\')
+      root[i] = '/';
 #else
   if (strchr(executable, '/')) {
     if (!desktop_absolute(executable, root))
-      return;
+      return 0;
   } else {
     const char *env = getenv("PATH"), *p;
     int found = 0;
     if (!env)
-      return;
+      return 0;
     for (p = env;;) {
       const char *end = strchr(p, ':');
       size_t n = end ? (size_t)(end - p) : strlen(p);
@@ -363,13 +414,37 @@ void desktop_stdlib(Compiler *c, const char *executable) {
       p = end + 1;
     }
     if (!found)
-      return;
+      return 0;
   }
 #endif
   slash = strrchr(root, '/');
   if (!slash)
-    return;
+    return 0;
   *slash = 0;
+  return 1;
+}
+
+void desktop_default_runner(const char *executable, char *out) {
+  char root[MAX_PATH];
+#ifdef _WIN32
+  const char *name = "pyc64run.exe";
+#else
+  const char *name = "pyc64run";
+#endif
+  /* Prefer the runner installed beside this compiler, then PATH. */
+  if (executable_directory(executable, root) && desktop_join(out, root, name) &&
+      platform_exists(out))
+    return;
+  strcpy(out, "pyc64run");
+}
+
+void desktop_stdlib(Compiler *c, const char *executable) {
+  char root[MAX_PATH], candidate[MAX_PATH], marker[MAX_PATH], *slash;
+  int depth;
+  if (c->nsearch_paths == MAX_SEARCH_PATHS)
+    return;
+  if (!executable_directory(executable, root))
+    return;
   for (depth = 0; depth < 8; ++depth) {
     const char *locations[] = {"stdlib", "share/pyc64/stdlib"};
     int i;

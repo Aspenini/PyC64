@@ -1,0 +1,257 @@
+# error: iteration requires
+for item in 7:
+    pass
+
+# ---
+# error: before initialization
+for item in [1]:
+    pass
+print(item)
+
+# ---
+# error: rebinding an iterated
+values = [1]
+for item in values:
+    values = [2]
+
+# ---
+# error: rebinding an iterated
+from pyc64.types import array, u8
+values = array(u8, 2)
+for item in values:
+    values = array(u8, 2)
+
+# ---
+# error: rebinding an iterated
+values = [1]
+for item in values:
+    for nested in values:
+        pass
+    else:
+        values = [2]
+
+# ---
+# error: cannot assign u16
+from pyc64.types import u8
+item: u8 = 0
+for item in [300]:
+    pass
+
+# ---
+# error: cannot assign str
+item = 0
+for item in ["a"]:
+    pass
+
+# ---
+# error: cannot use constant
+from typing import Final
+COUNT: Final = 1
+for COUNT in [1]:
+    pass
+
+# ---
+# error: outside a loop
+for item in []:
+    pass
+else:
+    break
+
+# ---
+# error: outside a loop
+while False:
+    pass
+else:
+    continue
+
+# ---
+# error: before initialization
+for item in [1]:
+    break
+else:
+    value = 9
+print(value)
+
+# ---
+# error: must return on every path
+def bad():
+    for value in [1]:
+        while False:
+            pass
+        else:
+            break
+    else:
+        return 3
+bad()
+
+# ---
+# error: before initialization
+values = [1]
+def bad() -> None:
+    for values in values:
+        pass
+
+# ---
+# error: recursion
+def recursive() -> None:
+    while False:
+        pass
+    else:
+        recursive()
+recursive()
+
+# ---
+# error: recursion
+from pyc64.types import u8
+def recursive() -> u8:
+    for item in [recursive()]:
+        pass
+    return 1
+recursive()
+
+# ---
+# error: must match exactly
+from pyc64.types import u16
+def f(values: list[u16]):
+    pass
+values = [1, 2]
+f(values)
+
+# ---
+# error: must match exactly
+def f(values):
+    print(len(values))
+a = [1]
+b = [500]
+f(a)
+f(b)
+
+# ---
+# error: requires list
+from pyc64.types import array, u8
+def f(values: list[u8]):
+    pass
+values = array(u8, 2)
+f(values)
+
+# ---
+# error: expects 3 elements
+from pyc64.types import array, u8
+def f(values: array[u8, 3]):
+    pass
+values = array(u8, 2)
+f(values)
+
+# ---
+# error: 1..16384
+from pyc64.types import array, u8
+def f(values: array[u8, 0]):
+    pass
+
+# ---
+# error: scalar element types
+from pyc64.types import array
+def f(values: array[str, 3]):
+    pass
+
+# ---
+# error: rebinding a container parameter
+from pyc64.types import u8
+def f(values: list[u8]):
+    values = [3, 4]
+values = [1, 2]
+f(values)
+
+# ---
+# error: rebinding a container parameter
+from pyc64.types import array, u8
+def f(values: array[u8, 2]):
+    values = array(u8, 2)
+values = array(u8, 2)
+f(values)
+
+# ---
+# error: before passing
+from pyc64.types import u8
+def f(values: list[u8]):
+    pass
+f([1, 2])
+
+# ---
+# error: cannot infer container element type
+def f(values):
+    return len(values)
+values = []
+f(values)
+
+# ---
+# error: return values are unsupported
+from pyc64.types import array, u8
+def f(values):
+    return values
+values = array(u8, 2)
+f(values)
+
+# ---
+# error: list index is out of bounds
+values = [1, 2]
+print(values[-3])
+
+# ---
+# error: list index is out of bounds
+values = [1, 2]
+print(values[2])
+
+# ---
+# error: incompatible inferred types
+values = [1, "x"]
+
+# ---
+# error: incompatible inferred types
+values = [True, 1]
+
+# ---
+# error: list elements
+values = [[1]]
+
+# ---
+# error: list aliases
+values = [1]
+other = values
+
+# ---
+# error: list size cannot change
+values = [1]
+values = [1, 2]
+
+# ---
+# error: cannot assign
+values = ["x"]
+values[0] = 1
+
+# ---
+# error: does not fit in u8
+values = [1]
+values[0] = 300
+
+# ---
+# error: before initialization
+values = [values[0]]
+
+# ---
+# error: list index is out of bounds
+values = []
+print(values[0])
+
+# ---
+# error: assign the list literal
+print(len([1, 2]))
+
+# ---
+# error: assign the list literal
+print([1, 2][0])
+
+# ---
+# error: unknown function
+values = [1]
+values.append(2)
