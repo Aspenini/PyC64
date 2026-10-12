@@ -1,4 +1,5 @@
--- Command-line tests for pyc64c, pyc64test and pyc64run.
+-- Command-line tests for pyc64 (the project tool), pyc64c (the compiler),
+-- pyc64test and pyc64run.
 --
 -- Each case receives the suite context `t` (see tests/suite.lua): t.exec runs
 -- a program in the case's empty workspace t.work, t.check fails the test with
@@ -18,7 +19,12 @@ local function read(file)
     return os.isfile(file) and io.readfile(file, {encoding = "binary"}) or nil
 end
 
+-- The project tool; t.compiler is pyc64c itself.
 local function pyc64(t, args, opt)
+    return t.exec(t.tool, args, opt)
+end
+
+local function pyc64c(t, args, opt)
     return t.exec(t.compiler, args, opt)
 end
 
@@ -51,6 +57,9 @@ local CLEAN = {envs = {PYC64_RUNNER = ""}}
 function cases()
     return {
         {name = "version_and_help"},
+        {name = "compiler_options"},
+        {name = "tool_finds_compiler"},
+        {name = "test_command"},
         {name = "new_project_workflow"},
         {name = "new_rejects_bad_names"},
         {name = "option_validation"},
@@ -73,8 +82,11 @@ function version_and_help(t)
     local result = succeeds(t, pyc64(t, {"--version"}), "--version")
     t.check(result.stdout:find("^PyC64 0%.1%.0") ~= nil, "unexpected version", result)
     result = succeeds(t, pyc64(t, {"--help"}), "--help")
-    t.check(t.contains(result.stdout, "Usage: pyc64c"), "help lacks usage", result)
-    fails(t, pyc64(t, {"--unexpected"}), "unknown option")
+    t.check(t.contains(result.stdout, "Usage: pyc64 COMMAND"), "help lacks usage", result)
+    fails(t, pyc64(t, {"--unexpected"}), "unknown command")
+    fails(t, pyc64(t, {"compile"}), "unknown command 'compile'")
+    fails(t, pyc64(t, {"build", "--unexpected"}), "unknown option")
+    t.check(pyc64(t, {}).code ~= 0, "pyc64 without a command should fail after printing help")
 end
 
 function new_project_workflow(t)
@@ -88,7 +100,7 @@ function new_project_workflow(t)
         succeeds(t, pyc64(t, {command}, {curdir = root}), command)
         t.check(not os.exists(path.join(root, "build")), command .. " created a build directory")
     end
-    succeeds(t, pyc64(t, {}, {curdir = root}), "build")
+    succeeds(t, pyc64(t, {"build"}, {curdir = root}), "build")
     local prg = path.join(root, "build", "space-game.PRG")
     t.check(os.isfile(path.join(root, "build", "space-game.map")), "build wrote no symbol map")
     t.check(t.contains(output_of(t, prg), "HELLO FROM PYC64!"), "new project prints the wrong text")
@@ -285,8 +297,7 @@ function run_selects_runner(t)
     local stand_in = path.join(t.work, "runner with spaces" .. (is_host("windows") and ".exe" or ""))
     os.cp(t.compiler, stand_in)
     local odd = '--a b"c\\'
-    result = fails(t, pyc64(t, {"run", "--runner", stand_in, "--rom-dir", path.join(t.work, "rom dir"), "--", odd},
-                            CLEAN), "unknown option '" .. odd .. "'")
+    result = fails(t, pyc64(t, {"run", "--runner", stand_in, "--", odd}, CLEAN), "unknown option '" .. odd .. "'")
     t.check(t.contains(result.stderr, "runner exited with status 1"), "runner status not reported", result)
     write(t, "pyc64.toml", PROJECT)
     succeeds(t, pyc64(t, {"build", "--target", "c64-reu"}), "c64-reu build")
@@ -355,4 +366,78 @@ function runner_options(t)
     fails(t, t.exec(t.runner, {prg, "--headless", "--rom-dir", path.join(t.work, "no-roms")},
                     {envs = {PYC64_ROM_DIR = "", PYC64_BASIC_ROM = "", PYC64_KERNAL_ROM = "",
                              PYC64_CHARGEN_ROM = ""}}), "missing C64 ROMs")
+end
+
+function compiler_options(t)
+    local result = succeeds(t, pyc64c(t, {"--version"}), "pyc64c --version")
+    t.check(result.stdout:find("^PyC64 0%.1%.0") ~= nil, "unexpected compiler version", result)
+    result = succeeds(t, pyc64c(t, {"--help"}), "pyc64c --help")
+    t.check(t.contains(result.stdout, "Usage: pyc64c SOURCE") and t.contains(result.stdout, "--emit"),
+            "compiler help incomplete", result)
+    local source = write(t, "game.py", "from pyc64.types import u8\nx: u8 = 5\nx += 1\nprint(x)\n")
+    succeeds(t, pyc64c(t, {source}), "pyc64c SOURCE")
+    t.check(output_of(t, path.join(t.work, "game.PRG")) == "6\n", "default PRG prints the wrong value")
+    succeeds(t, pyc64c(t, {source, "--emit", "asm"}), "--emit asm")
+    t.check(t.contains(read(path.join(t.work, "game.lst")) or "", "inc L"), "default listing lacks code")
+    os.rm(path.join(t.work, "game.PRG"))
+    result = succeeds(t, pyc64c(t, {source, "--emit", "check"}), "--emit check")
+    t.check(t.contains(result.stdout, "Checked") and not os.exists(path.join(t.work, "game.PRG")),
+            "--emit check wrote output", result)
+    result = succeeds(t, pyc64c(t, {source, "--emit", "size"}), "--emit size")
+    t.check(result.stdout:find("Code: %d+ bytes") ~= nil and not os.exists(path.join(t.work, "game.PRG")),
+            "--emit size wrote output or lacks sizes", result)
+    write(t, "lib/helper.py", "value = 7\n")
+    local main = write(t, "app/main.py", "import helper\nprint(helper.value)\n")
+    fails(t, pyc64c(t, {main}), "cannot find module 'helper'")
+    succeeds(t, pyc64c(t, {main, "-I", path.join(t.work, "lib"), "-o", "app.PRG", "--map", "app.map"}), "-I")
+    t.check(os.isfile(path.join(t.work, "app.map")), "--map wrote nothing")
+    t.check(output_of(t, path.join(t.work, "app.PRG")) == "7\n", "-I module prints the wrong value")
+    fails(t, pyc64c(t, {source, "--emit", "elf"}), "unknown --emit 'elf'")
+    fails(t, pyc64c(t, {source, "--target", "amiga"}), "unknown target")
+    fails(t, pyc64c(t, {source, main}), "exactly one SOURCE")
+    fails(t, pyc64c(t, {source, "--project", "pyc64.toml"}), "unknown option")
+    fails(t, pyc64c(t, {}), nil, "pyc64c without SOURCE")
+    for _, command in ipairs({"build", "run", "new", "clean", "asset", "sid", "test"}) do
+        fails(t, pyc64c(t, {command, "main.py"}), "moved to the project tool: use 'pyc64 " .. command .. "'")
+    end
+end
+
+function tool_finds_compiler(t)
+    project(t)
+    -- PYC64_COMPILER overrides the pyc64c installed beside pyc64.
+    local result = fails(t, pyc64(t, {"build"}, {envs = {PYC64_COMPILER = "missing-compiler"}}),
+                         "cannot launch compiler 'missing-compiler'")
+    t.check(not os.exists(path.join(t.work, "build", "demo.PRG")), "a missing compiler produced a PRG", result)
+    -- Compiler diagnostics and exit status pass straight through the tool.
+    write(t, "main.py", "print(missing)\n")
+    result = fails(t, pyc64(t, {"build"}), "unknown variable 'missing'")
+    t.check(result.stderr:find("main%.py:1:7: error:") ~= nil, "diagnostic location lost", result)
+    -- Project settings reach pyc64c as flags.
+    write(t, "main.py", "from c64 import reu\nprint(reu.present())\n")
+    write(t, "pyc64.toml", PROJECT .. '[target]\nmachine = "c64-reu"\n')
+    succeeds(t, pyc64(t, {"build"}), "c64-reu project build")
+    fails(t, pyc64(t, {"build", "--target", "c64"}), "requires target 'c64-reu'")
+end
+
+function test_command(t)
+    project(t, nil, 'from c64.memory import poke\npoke(0xC000, 42)\nprint("TESTED", 42)\n')
+    local result = succeeds(t, pyc64(t, {"test"}, CLEAN), "pyc64 test")
+    t.check(result.stdout:find("Launching [^\n]*pyc64test") ~= nil, "test did not use pyc64test", result)
+    t.check(t.contains(result.stdout, "TESTED 42") and t.contains(result.stderr, "Checks passed"),
+            "tester output missing", result)
+    succeeds(t, pyc64(t, {"test", "--", "--expect", "0xC000=42", "--expect-text", "TESTED 42"}), "forwarded checks")
+    result = fails(t, pyc64(t, {"test", "--", "--expect", "0xC000=41"}), "RAM[49152] = 42, expected 41")
+    t.check(t.contains(result.stderr, "tester exited with status 1"), "tester failure not reported", result)
+    local source = write(t, "solo.py", 'print("SOLO")\n')
+    result = succeeds(t, pyc64(t, {"test", source, "--", "--expect-text", "SOLO"}), "standalone test")
+    t.check(os.isfile(path.join(t.work, "solo.PRG")), "standalone test wrote no PRG")
+    result = fails(t, pyc64(t, {"test", "--tester", "missing-tester"}), "cannot launch tester 'missing-tester'")
+    result = pyc64(t, {"test"}, {envs = {PYC64_TESTER = "missing-env-tester"}})
+    t.check(result.code ~= 0 and t.contains(result.stdout, "Launching missing-env-tester"), "PYC64_TESTER unused",
+            result)
+    fails(t, pyc64(t, {"run", "--tester", "x"}), "apply only to run and test")
+    fails(t, pyc64(t, {"test", "--runner", "x"}), "apply only to run and test")
+    write(t, "main.py", "print(missing)\n")
+    result = fails(t, pyc64(t, {"test"}), "unknown variable")
+    t.check(not t.contains(result.stdout, "Launching"), "test ran after a failed build", result)
 end

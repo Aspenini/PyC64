@@ -1,6 +1,12 @@
-#include "desktop.h"
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef MAX_PATH
+#endif
+#include "tool.h"
 #include <ctype.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 static int error(const char *path, int line, const char *message) {
   fprintf(stderr, "%s:%d: error: %s\n", path, line, message);
@@ -138,7 +144,7 @@ int project_load(Project *project, const char *path) {
   if (!f)
     return error(
         path, 1,
-        "cannot open project; use 'pyc64c new NAME' or specify SOURCE");
+        "cannot open project; use 'pyc64 new NAME' or specify SOURCE");
   length = fread(text, 1, sizeof(text) - 1, f);
   if (ferror(f) || (!feof(f) && fgetc(f) != EOF)) {
     fclose(f);
@@ -172,7 +178,7 @@ int project_load(Project *project, const char *path) {
           break;
       if (table == 5 && !strcmp(start, "emulator"))
         return error(path, line,
-                     "[emulator] was replaced by [runner]; 'pyc64c run' uses "
+                     "[emulator] was replaced by [runner]; 'pyc64 run' uses "
                      "pyc64run");
       if (table == 5)
         return error(path, line, "unsupported project table");
@@ -279,7 +285,7 @@ int project_clean(const Project *project) {
   const char *extensions[] = {".PRG", ".lst", ".map"};
   char paths[3][MAX_PATH];
   int i;
-  if (!desktop_project_directory(project, 0))
+  if (!project_directory(project, 0))
     return 1;
   for (i = 0; i < 3; ++i)
     if (!project_artifact(project, extensions[i], paths[i]))
@@ -326,7 +332,62 @@ int project_new(const char *name) {
       !desktop_join(path, root, ".gitignore") ||
       !platform_write(path, (const unsigned char *)ignore, strlen(ignore)))
     return 1;
-  printf("Created %s\nNext: cd %s, then pyc64c build or pyc64c run\n", root,
+  printf("Created %s\nNext: cd %s, then pyc64 build or pyc64 run\n", root,
          name);
   return 0;
+}
+
+static int directory_link(const char *path) {
+#ifdef _WIN32
+  DWORD attributes = GetFileAttributesA(path);
+  return attributes != INVALID_FILE_ATTRIBUTES &&
+         (attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+#else
+  struct stat s;
+  return !lstat(path, &s) && S_ISLNK(s.st_mode);
+#endif
+}
+
+int project_directory(const Project *project, int create) {
+  char path[MAX_PATH], *p;
+  size_t base;
+  if (!desktop_join(path, project->root, project->directory))
+    return 0;
+  base = strlen(project->root);
+  if (base && project->root[base - 1] != '/')
+    ++base;
+  for (p = path + base;; ++p) {
+    char saved;
+    if (*p && *p != '/')
+      continue;
+    saved = *p;
+    *p = 0;
+    if (directory_link(path)) {
+      fprintf(stderr,
+              "error: project build directory must not traverse a link or "
+              "junction: '%s'\n",
+              path);
+      return 0;
+    }
+    if (!desktop_directory(path)) {
+      struct stat s;
+      if (!stat(path, &s)) {
+        fprintf(stderr,
+                "error: build directory component is not a directory: '%s'\n",
+                path);
+        return 0;
+      }
+      if (errno != ENOENT) {
+        fprintf(stderr, "error: cannot inspect build directory '%s'\n", path);
+        return 0;
+      }
+      if (!create)
+        return 1;
+      if (!desktop_mkdir(path))
+        return 0;
+    }
+    *p = saved;
+    if (!saved)
+      return 1;
+  }
 }

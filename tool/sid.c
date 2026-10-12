@@ -1,4 +1,4 @@
-#include "desktop.h"
+#include "tool.h"
 
 /* A standalone launcher owns the machine. Its resident page is outside the
    tune's image; after handoff there is no IRQ/NMI trampoline or Python frame.
@@ -152,7 +152,7 @@ static void resident(SidCode *c, const SidInfo *sid, int source, int song,
     emit(c, 0x4c, loop, 3);
   }
 }
-int desktop_sid_command(const char *executable, int argc, char **argv) {
+int tool_sid_command(const char *executable, int argc, char **argv) {
   const char *source = NULL, *output = NULL, *mapping = NULL, *runner = NULL;
   const char *rom_dir = NULL;
   char path[MAX_PATH], absolute[MAX_PATH], error[256], runner_path[MAX_PATH];
@@ -201,7 +201,7 @@ int desktop_sid_command(const char *executable, int argc, char **argv) {
       source = s;
   }
   if (!source || ((runner || rom_dir) && !run)) {
-    fputs("error: use pyc64c sid FILE.sid [-o FILE.PRG] [--song N] [--map "
+    fputs("error: use pyc64 sid FILE.sid [-o FILE.PRG] [--song N] [--map "
           "FILE] [--run [--runner FILE] [--rom-dir DIR]]\n",
           stderr);
     goto done;
@@ -352,13 +352,11 @@ int desktop_sid_command(const char *executable, int argc, char **argv) {
       goto done;
     }
     if (!runner) {
-      runner = getenv("PYC64_RUNNER");
-      if (!runner || !*runner) {
-        desktop_default_runner(executable, runner_path);
-        runner = runner_path;
-      }
+      tool_locate(executable, "pyc64run", "PYC64_RUNNER", runner_path);
+      runner = runner_path;
     }
-    rc = desktop_run(runner, absolute, rom_dir, 0, NULL);
+    rc = tool_launch(runner, "runner", "use --runner PATH or PYC64_RUNNER",
+                     absolute, rom_dir, NULL, 0);
   }
 done:
   if (file)

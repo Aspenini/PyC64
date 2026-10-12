@@ -10,10 +10,11 @@ from libraries, rather than custom language syntax.
 
 ## Get started
 
-Run the Windows installer (`PyC64-VERSION-windows-x64-setup.exe`). It includes the compiler, runner,
-tester, libraries and examples. It installs to `C:\PyC64` and requires administrator
-permission. It does not change PATH. Run the compiler using
-`C:\PyC64\bin\pyc64c.exe`. You do **not** need Python or a compiler toolchain.
+Run the Windows installer (`PyC64-VERSION-windows-x64-setup.exe`). It includes the
+`pyc64` project tool, the compiler, runner, tester, libraries and examples. It installs
+to `C:\PyC64` and requires administrator permission. It does not change PATH, so run
+`C:\PyC64\bin\pyc64.exe` (or add `C:\PyC64\bin` to PATH yourself). You do **not**
+need Python or a compiler toolchain.
 
 Save this as `main.py` in a writable folder:
 
@@ -30,7 +31,7 @@ print("HELLO FROM PYC64!", score)
 ```
 
 ```powershell
-C:\PyC64\bin\pyc64c.exe run main.py --rom-dir "C:\C64-ROMs"
+C:\PyC64\bin\pyc64.exe run main.py --rom-dir "C:\C64-ROMs"
 ```
 
 `run` builds `main.PRG` and opens it in `pyc64run`, a PAL C64 with video, keyboard,
@@ -41,11 +42,12 @@ you can also load it on a real C64 or in another emulator.
 
 ## Run and test
 
-PyC64 ships three programs:
+PyC64 ships four programs. You normally use `pyc64`, which runs the others:
 
 | Program | Purpose | Emulator |
 | --- | --- | --- |
-| `pyc64c` | Compiler and project tool | — |
+| `pyc64` | Project tool: `new`, `build`, `run`, `test`, assets | — |
+| `pyc64c` | Compiler: one source file to a PRG, listing or report | — |
 | `pyc64run` | Play a PRG in a window, or check it headless | [ChronoCoders/C64](https://github.com/ChronoCoders/C64) |
 | `pyc64test` | Headless machine-code tests | [floooh/chips](https://github.com/floooh/chips) |
 
@@ -54,10 +56,13 @@ is CTRL and Left Alt is Commodore. Numpad 8/2/4/6 and Right Ctrl control joystic
 Add `--headless` to run `--frames N` (default 300) without a window, then check
 `--expect ADDRESS=BYTE` or `--expect-screen TEXT`.
 
-`pyc64c run` passes `--rom-dir DIR` and anything after `--` to `pyc64run`, for
-example `pyc64c run -- --headless --frames 100 --expect-screen READY`. It uses the
-`pyc64run` installed beside `pyc64c`; `--runner FILE`, `PYC64_RUNNER` or a project's
-`[runner] executable` select another. `pyc64c sid FILE.sid --run` works the same way.
+`pyc64 run` passes `--rom-dir DIR` and anything after `--` to `pyc64run`, for
+example `pyc64 run -- --headless --frames 100 --expect-screen READY`. `pyc64 test`
+does the same with `pyc64test`, e.g. `pyc64 test -- --expect-text "SCORE: 42"`; its
+exit status is the test result. Both use the programs installed beside `pyc64`;
+`--runner FILE`, `PYC64_RUNNER` or a project's `[runner] executable` select another
+runner, and `--tester FILE` or `PYC64_TESTER` another tester.
+`pyc64 sid FILE.sid --run` launches its player the same way.
 
 `pyc64test` runs the PRG on chips' cycle-stepped 6502 with flat RAM by default.
 CHROUT and GETIN are handled by the tester; the test passes when the program returns
@@ -81,9 +86,9 @@ are deferred.
 ## Projects and commands
 
 ```powershell
-C:\PyC64\bin\pyc64c.exe new mygame
+C:\PyC64\bin\pyc64.exe new mygame
 cd mygame
-C:\PyC64\bin\pyc64c.exe build
+C:\PyC64\bin\pyc64.exe build
 ```
 
 `new` creates `main.py`, `pyc64.toml` and `.gitignore`. Commands without a source
@@ -93,6 +98,7 @@ another project; configure its target and assets in TOML.
 | Command | Purpose |
 | --- | --- |
 | `build` / `run` | Write a native PRG / build and open it in `pyc64run` |
+| `test` | Build and check the PRG with `pyc64test` |
 | `check` | Check source without writing a PRG |
 | `size` | Report code, data and asset sizes |
 | `asm` | Write a readable native instruction listing |
@@ -100,7 +106,11 @@ another project; configure its target and assets in TOML.
 | `sid` | Prepare a standalone RSID player PRG |
 | `clean` | Remove the project's named build outputs |
 
-Use `C:\PyC64\bin\pyc64c.exe --help` for options. Keep the installed `bin/` and
+Use `C:\PyC64\bin\pyc64.exe --help` for options. `pyc64` runs `pyc64c`, the
+compiler, which you can also call directly in your own build scripts:
+`pyc64c main.py -o MAIN.PRG [--emit prg|asm|check|size] [--target T] [-I DIR]`.
+It compiles one source file and its imports and knows nothing about projects.
+Keep the installed `bin/` and
 `share/pyc64/stdlib/` together, or put `stdlib/` beside a portable executable.
 Copy installed examples into a writable folder before building them.
 
@@ -131,7 +141,7 @@ Python features produce compiler errors.
 Browse [examples](examples) for complete programs. Library signatures are in
 `stdlib/` source and type stubs (installed under `share/pyc64/stdlib/`).
 Examples with assets have a `pyc64.toml`: build
-those with `C:\PyC64\bin\pyc64c.exe build --project examples\assets\pyc64.toml`.
+those with `C:\PyC64\bin\pyc64.exe build --project examples\assets\pyc64.toml`.
 
 The default target is `c64`; `--target c64-reu` enables REU APIs. `pyc64run` does
 not emulate an REU yet, so `run` warns and the program sees no expansion; test REU
@@ -141,7 +151,7 @@ currently provides REU access; Ultimate-specific APIs and hosting are future wor
 For RSID files that need full control of the machine:
 
 ```powershell
-C:\PyC64\bin\pyc64c.exe sid tune.sid --song 2 -o TUNE.PRG
+C:\PyC64\bin\pyc64.exe sid tune.sid --song 2 -o TUNE.PRG
 ```
 
 This supports BASIC, busy-loop init, NMI and banked/direct-vector handlers. The
@@ -187,7 +197,7 @@ xmake install -o build/cli-install
 & 'C:\Program Files\Inno Setup\ISCC.exe' packaging\PyC64.iss
 ```
 
-`pyc64c`, `pyc64run` and `pyc64test` are in `build/windows/x64/release/`; Inno Setup writes to
+`pyc64`, `pyc64c`, `pyc64run` and `pyc64test` are in `build/windows/x64/release/`; Inno Setup writes to
 `build/installer/`. Use `xmake f -m debug` for debugging. Explicit GCC/Clang
 toolchains are supported; their runtime dependencies may differ.
 
@@ -198,10 +208,10 @@ then use GCC or Clang with xmake:
 xmake f -m release --toolchain=gcc
 xmake
 xmake install -o "$HOME/.local"
-"$HOME/.local/bin/pyc64c" --version
+"$HOME/.local/bin/pyc64" --version
 ```
 
-The three executables are in `build/linux/x86_64/release/`. Use `--toolchain=clang`
+The four executables are in `build/linux/x86_64/release/`. Use `--toolchain=clang`
 to select Clang. Keep the installed `bin/` and `share/` directories together.
 
 `xmake test` compiles and runs the suite in [tests](tests): about 300 small Python

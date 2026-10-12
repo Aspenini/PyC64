@@ -5,6 +5,9 @@
 #endif
 #define AppVersion "0.1.0"
 #define ProjectRoot AddBackslash(SourcePath) + ".."
+#ifndef ToolExe
+  #define ToolExe "build\windows\x64\release\pyc64.exe"
+#endif
 #ifndef CompilerExe
   #define CompilerExe "build\windows\x64\release\pyc64c.exe"
 #endif
@@ -47,7 +50,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 LicenseFile={#ProjectRoot}\LICENSE
-UninstallDisplayIcon={app}\bin\pyc64c.exe
+UninstallDisplayIcon={app}\bin\pyc64.exe
 OutputDir={#ProjectRoot}\build\installer
 OutputBaseFilename={#InstallerName}
 Compression=lzma2
@@ -60,6 +63,7 @@ RestartApplications=no
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
+Source: "{#ToolExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#CompilerExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#RunnerExe}"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#TesterExe}"; DestDir: "{app}\bin"; Flags: ignoreversion

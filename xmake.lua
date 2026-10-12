@@ -39,29 +39,56 @@ option("kernal_rom")
     set_description("C64 KERNAL ROM for math and full-machine tests")
 option_end()
 
-target("pyc64c")
-    set_kind("binary")
-    set_rundir("$(projectdir)")
-    if is_mode("release") then
-        set_optimize("faster")
-    end
-    add_includedirs("compiler", "platform")
-    add_files("compiler/compiler.c", "compiler/lexer.c", "compiler/parser.c",
-              "compiler/types.c", "compiler/infer.c", "compiler/modules.c", "compiler/ir.c", "compiler/optimize.c",
-              "compiler/codegen.c", "compiler/classes.c", "compiler/enums.c", "compiler/bytes.c", "compiler/floats.c", "compiler/irq.c", "compiler/music.c", "compiler/assets.c", "platform/assets.c", "platform/rsid.c", "platform/desktop.c", "platform/project.c", "platform/cli.c")
-    add_installfiles("stdlib/(**.py)", {prefixdir = "share/pyc64/stdlib"})
-    add_installfiles("stdlib/(**.pyi)", {prefixdir = "share/pyc64/stdlib"})
-    add_installfiles("platform/vendor/STB_LICENSE.txt", {prefixdir = "share/pyc64/licenses"})
-    add_installfiles("LICENSE", {prefixdir = "share/pyc64/licenses"})
-    add_cflags("-Wpedantic", {tools = {"gcc", "clang"}})
+-- Portable C99 targets; xmake maps c99 to C++ for MSVC, so use its C mode.
+rule("pyc64.c")
+    on_load(function (target)
+        if is_mode("release") then target:set("optimize", "faster") end
+        target:add("cflags", "-Wpedantic", {tools = {"gcc", "clang"}})
+    end)
     on_config(function (target)
-        -- xmake maps c99 to C++ for MSVC; use its supported C mode instead.
         if target:has_tool("cc", "cl", "clang_cl") then
             target:set("languages", "c11")
             target:set("runtimes", is_mode("debug") and "MTd" or "MT")
             target:add("defines", "_CRT_SECURE_NO_WARNINGS")
         end
     end)
+rule_end()
+
+-- Desktop host services and data formats shared by pyc64c and pyc64:
+-- files and paths, PNG asset decoding and SID headers.
+target("pyc64_host")
+    set_kind("static")
+    set_default(false)
+    add_rules("pyc64.c")
+    add_includedirs("compiler", "platform", {public = true})
+    add_files("platform/desktop.c", "platform/assets.c", "compiler/music.c")
+target_end()
+
+-- The compiler: one SOURCE (and its imports) to a PRG, listing or report.
+target("pyc64c")
+    set_kind("binary")
+    set_rundir("$(projectdir)")
+    add_rules("pyc64.c")
+    add_deps("pyc64_host")
+    add_files("compiler/compiler.c", "compiler/lexer.c", "compiler/parser.c",
+              "compiler/types.c", "compiler/infer.c", "compiler/modules.c", "compiler/ir.c", "compiler/optimize.c",
+              "compiler/codegen.c", "compiler/classes.c", "compiler/enums.c", "compiler/bytes.c", "compiler/floats.c",
+              "compiler/irq.c", "compiler/assets.c", "platform/pyc64c.c")
+    add_installfiles("stdlib/(**.py)", {prefixdir = "share/pyc64/stdlib"})
+    add_installfiles("stdlib/(**.pyi)", {prefixdir = "share/pyc64/stdlib"})
+    add_installfiles("platform/vendor/STB_LICENSE.txt", {prefixdir = "share/pyc64/licenses"})
+    add_installfiles("LICENSE", {prefixdir = "share/pyc64/licenses"})
+target_end()
+
+-- The project tool: pyc64.toml, new/build/run/test/clean, assets and SID
+-- players. It runs pyc64c, pyc64run and pyc64test as separate processes.
+target("pyc64")
+    set_kind("binary")
+    set_rundir("$(projectdir)")
+    add_rules("pyc64.c")
+    add_deps("pyc64_host")
+    add_includedirs("tool")
+    add_files("tool/*.c")
 target_end()
 
 -- MSVC/clang-cl: static runtime and quiet CRT deprecation warnings.
@@ -157,7 +184,7 @@ end
 target("pyc64_tests")
     set_kind("phony")
     set_default(false)
-    add_deps("pyc64c", "pyc64run", "pyc64test")
+    add_deps("pyc64", "pyc64c", "pyc64run", "pyc64test")
     on_load(function (target)
         import("suite", {rootdir = path.join(os.projectdir(), "tests")})
         suite.register(target)

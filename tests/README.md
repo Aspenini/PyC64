@@ -20,7 +20,7 @@ A failing test prints the command, its output and a workspace under
 | `errors/AREA.txt` | `error_AREA` | Several programs that must fail to compile |
 | `machine/NAME.py` | `machine_chips_NAME`, `machine_chrono_NAME` | Full PAL C64 on both emulators |
 | `host/NAME.py` | `host_NAME` | The `stdlib/` Python implementations under CPython |
-| `cli.lua` | `cli_NAME` | Command-line behaviour of the three tools |
+| `cli.lua` | `cli_NAME` | Command-line behaviour of the four programs |
 | `../examples/NAME/` | `example_NAME` | Every example compiles |
 
 Tests that need C64 ROMs or CPython are skipped (and counted) until they are
@@ -92,7 +92,7 @@ fail without writing a PRG and report `FILE:LINE:COLUMN: error:`.
 | `# screen: TEXT` | Text that must be on the screen (repeatable) |
 | `# expect: ADDRESS=BYTE` | RAM check (repeatable) |
 | `# input: TEXT` / `# key: CODE` / `# joystick: MASK` | Keyboard and joystick 2 |
-| `# build: ARGS` | Build something else, e.g. `--project ${ROOT}/examples/music_cia/pyc64.toml` |
+| `# build: ARGS` | `pyc64 build ARGS` instead, e.g. `--project ${ROOT}/examples/music_cia/pyc64.toml` |
 
 ## Host library tests
 

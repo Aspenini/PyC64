@@ -194,6 +194,7 @@ local function new_context(target, case)
     local context = {
         root = root, config = config, case = case,
         compiler = path.absolute(target:dep("pyc64c"):targetfile()),
+        tool = path.absolute(target:dep("pyc64"):targetfile()),
         tester = path.absolute(target:dep("pyc64test"):targetfile()),
         runner = path.absolute(target:dep("pyc64run"):targetfile()),
         work = path.join(root, "build", "tests", case.name),
@@ -263,7 +264,7 @@ end
 
 local function compile(context, source, extra)
     local prg = path.join(context.work, "main.PRG")
-    local args = {"build", source, "-o", prg, "--map", path.join(context.work, "main.map")}
+    local args = {source, "-o", prg, "--map", path.join(context.work, "main.map")}
     table.join2(args, extra or {})
     local result = context.exec(context.compiler, args)
     context.check(result.code == 0, "compilation failed", result)
@@ -365,7 +366,7 @@ local function check_error_case(context, index, item)
             io.writefile(path.join(work, name), text, {encoding = "binary"})
         end
         local prg = path.join(work, "main.PRG")
-        local args = {"build", path.join(work, "main.py"), "-o", prg}
+        local args = {path.join(work, "main.py"), "-o", prg}
         table.join2(args, split(d.pyc64c or ""))
         local result = context.exec(context.compiler, args, {curdir = work})
         context.check(result.code ~= 0, label .. ": compilation was expected to fail", result)
@@ -409,7 +410,7 @@ function runners.machine(context, case)
         local args = {"build"}
         for _, word in ipairs(split(context.substitute(d.build))) do table.insert(args, word) end
         table.join2(args, {"-o", prg, "--map", path.join(context.work, "main.map")})
-        local result = context.exec(context.compiler, args)
+        local result = context.exec(context.tool, args)
         context.check(result.code == 0, "compilation failed", result)
     else
         prg = compile(context, stage(context, case.entry), split(d.pyc64c or ""))
@@ -439,16 +440,15 @@ function runners.cli(context, case)
 end
 
 function runners.example(context, case)
-    local args = {"build"}
+    -- Projects build through pyc64; plain examples go straight to pyc64c.
     local project = path.join(case.entry, "pyc64.toml")
-    if os.isfile(project) then
-        table.join2(args, {"--project", project})
-    else
-        table.insert(args, path.join(case.entry, "main.py"))
-    end
     local prg = path.join(context.work, "main.PRG")
+    local program, args = context.compiler, {path.join(case.entry, "main.py")}
+    if os.isfile(project) then
+        program, args = context.tool, {"build", "--project", project}
+    end
     table.join2(args, {"-o", prg, "--map", path.join(context.work, "main.map")})
-    local result = context.exec(context.compiler, args)
+    local result = context.exec(program, args)
     context.check(result.code == 0, "example does not compile", result)
     local data = io.readfile(prg, {encoding = "binary"})
     context.check(data and #data > 14 and data:byte(1) == 1 and data:byte(2) == 8,
